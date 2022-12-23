@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class YamlConfig implements IConfig {
 
@@ -27,6 +28,18 @@ public class YamlConfig implements IConfig {
   @Override
   public boolean exists(String key) {
     return config.isSet(key);
+  }
+
+  @Override
+  public boolean attachComment(String key, List<String> lines) {
+    // TODO: Find a way to implement this
+    return false;
+  }
+
+  @Override
+  public @Nullable List<String> readComment(String key) {
+    // TODO: Find a way to implement this
+    return null;
   }
 
   public boolean save(File file) throws IOException {

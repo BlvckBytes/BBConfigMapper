@@ -117,7 +117,8 @@ public class ConfigReader {
         input instanceof Float ||
         input instanceof Integer ||
         input instanceof Long ||
-        input instanceof Byte
+        input instanceof Byte ||
+        input instanceof Short
     );
   }
 }

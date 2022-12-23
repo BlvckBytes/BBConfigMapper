@@ -17,9 +17,9 @@ public interface IEvaluable {
   List<Boolean> asBooleanList(IEvaluationEnvironment env);
   List<String> asStringList(IEvaluationEnvironment env);
 
-  Map<Object, Long> asLongMap(IEvaluationEnvironment env);
-  Map<Object, Double> asDoubleMap(IEvaluationEnvironment env);
-  Map<Object, Boolean> asBooleanMap(IEvaluationEnvironment env);
-  Map<Object, String> asStringMap(IEvaluationEnvironment env);
+  Map<String, Long> asLongMap(IEvaluationEnvironment env);
+  Map<String, Double> asDoubleMap(IEvaluationEnvironment env);
+  Map<String, Boolean> asBooleanMap(IEvaluationEnvironment env);
+  Map<String, String> asStringMap(IEvaluationEnvironment env);
 
 }

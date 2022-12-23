@@ -36,4 +36,16 @@ public class FakeConfig implements IConfig {
   public boolean exists(String key) {
     return values.containsKey(key);
   }
+
+  @Override
+  public boolean attachComment(String key, List<String> lines) {
+    // noop
+    return false;
+  }
+
+  @Override
+  public @Nullable List<String> readComment(String key) {
+    // noop
+    return null;
+  }
 }

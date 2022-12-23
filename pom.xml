@@ -21,6 +21,14 @@
             <version>0.1-SNAPSHOT</version>
         </dependency>
 
+        <!-- Lombok: Used for @AllArgsConstructor, @Getter, @Setter, etc. -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- XSeries compatibility enums -->
         <dependency>
             <groupId>com.github.cryptomorin</groupId>

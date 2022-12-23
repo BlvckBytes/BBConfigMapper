@@ -70,25 +70,25 @@ public class ConfigValue implements IEvaluable {
 
   @Override
   @SuppressWarnings("unchecked")
-  public Map<Object, Long> asLongMap(IEvaluationEnvironment env) {
+  public Map<String, Long> asLongMap(IEvaluationEnvironment env) {
     return interpretOrReadCache(value, Map.class, Long.class, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public Map<Object, Double> asDoubleMap(IEvaluationEnvironment env) {
+  public Map<String, Double> asDoubleMap(IEvaluationEnvironment env) {
     return interpretOrReadCache(value, Map.class, Double.class, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public Map<Object, Boolean> asBooleanMap(IEvaluationEnvironment env) {
+  public Map<String, Boolean> asBooleanMap(IEvaluationEnvironment env) {
     return interpretOrReadCache(value, Map.class, Boolean.class, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public Map<Object, String> asStringMap(IEvaluationEnvironment env) {
+  public Map<String, String> asStringMap(IEvaluationEnvironment env) {
     return interpretOrReadCache(value, Map.class, String.class, env);
   }
 
@@ -190,11 +190,11 @@ public class ConfigValue implements IEvaluable {
         throw new IllegalStateException("Cannot transform type " + input.getClass().getName() + " into a map");
 
       Map<?, ?> items = (Map<?, ?>) input;
-      Map<Object, Object> results = new HashMap<>();
+      Map<String, Object> results = new HashMap<>();
 
       // Interpret each value as the requested generic type
       for (Map.Entry<?, ?> entry : items.entrySet())
-        results.put(entry.getKey(), interpretScalar(entry.getValue(), genericType, env));
+        results.put(String.valueOf(entry.getKey()), interpretScalar(entry.getValue(), genericType, env));
 
       cachedGenericType = genericType;
       cachedValue = results;
