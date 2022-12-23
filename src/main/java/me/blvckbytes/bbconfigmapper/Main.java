@@ -13,7 +13,7 @@ public class Main {
     FakeConfig config = new FakeConfig();
     ConfigReader reader = new ConfigReader(config, evaluator);
 
-    IEvaluable value = reader.get("lore$");
+    IEvaluable value = reader.get("lore");
 
     if (value != null) {
       System.out.println(String.join("|", value.asStringList(environment)));

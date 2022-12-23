@@ -31,17 +31,26 @@ public class ConfigReader {
     if (cache.containsKey(key))
       return cache.get(key);
 
+    Object value;
+
+    // The config didn't know this key
     if (!config.exists(key)) {
+
+      // Check if it's marked as an expression
+      String expressionKey = key + "$";
+      if (config.exists(expressionKey))
+        value = parseExpressions(config.get(expressionKey));
+
       // Remember that this key didn't exist
-      cache.put(key, null);
-      return null;
+      else {
+        cache.put(key, null);
+        return null;
+      }
     }
 
-    Object value = config.get(key);
-
-    // Marked as an expression capable key, evaluate
-    if (key.endsWith("$"))
-      value = parseExpressions(value);
+    // Not marked as an expression
+    else
+      value = config.get(key);
 
     ConfigValue result = new ConfigValue(value, evaluator);
     cache.put(key, result);
@@ -49,7 +58,9 @@ public class ConfigReader {
   }
 
   /**
-   * Set a value within the config, identified by it's key
+   * Set a value within the config, identified by it's key. This
+   * method should be preferred over {@link IConfig#set(String, Object)}, as
+   * it also invalidates a possibly cached value within the reader
    * @param key Key to write to
    * @param value Value to write
    */
