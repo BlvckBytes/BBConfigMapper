@@ -204,4 +204,11 @@ public class ConfigValue implements IEvaluable {
     cachedValue = interpretScalar(input, type, env);
     return (T) cachedValue;
   }
+
+  @Override
+  public String toString() {
+    return "ConfigValue{" +
+      "value=" + value +
+      '}';
+  }
 }

@@ -1,5 +1,6 @@
 package me.blvckbytes.bbconfigmapper;
 
+import me.blvckbytes.bbconfigmapper.sections.DatabaseSection;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
@@ -69,20 +70,19 @@ public class Main {
     cfg.save(sw);
     System.out.println(sw);
 
-    // So far: not too shabby if I may say so myself
-
     IExpressionEvaluator evaluator = new GPEEE(null);
     IEvaluationEnvironment environment = GPEEE.EMPTY_ENVIRONMENT;
 
-    ConfigReader reader = new ConfigReader(cfg, evaluator);
+    ConfigMapper reader = new ConfigMapper(cfg, evaluator);
 
     IEvaluable value = reader.get("expr_test.lore");
 
-    if (value != null) {
+    if (value != null)
       System.out.println(String.join("|", value.asStringList(environment)));
-      return;
-    }
+    else
+      System.err.println("Could not find the target key");
 
-    System.err.println("Could not find the target key");
+    DatabaseSection sect = reader.mapSection("sql", DatabaseSection.class);
+    System.out.println(sect);
   }
 }
