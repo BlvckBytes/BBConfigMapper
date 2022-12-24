@@ -7,37 +7,44 @@ import java.util.List;
 public interface IConfig {
 
   /**
-   * Get a value by it's key
-   * @param key Key to identify the value
+   * Get a value by it's path
+   * @param path Path to identify the value
    */
-  @Nullable Object get(String key);
+  @Nullable Object get(String path);
 
   /**
-   * Set a value by it's key
-   * @param key Key to identify the value
+   * Set a value by it's path
+   * @param path Path to identify the value
    */
-  void set(String key, @Nullable Object value);
+  void set(String path, @Nullable Object value);
 
   /**
-   * Check whether a value exists, identified by it's key
-   * @param key Key to identify the value
+   * Remove a key and all of it's children by it's path
+   * @param path Path to identify the key
    */
-  boolean exists(String key);
+  void remove(String path);
 
   /**
-   * Attach a comment to a specific key
-   * @param key Key to attach to
+   * Check whether a given path exists within the configuration file
+   * @param path Path to identify the value
+   */
+  boolean exists(String path);
+
+  /**
+   * Attach a comment to a specific path
+   * @param path Path to attach to
    * @param lines Lines of text in the comment
-   * @return True on success, false if that key didn't yet exist
+   * @param self Whether to attach to the key itself or to it's value
    */
-  boolean attachComment(String key, List<String> lines);
+  void attachComment(String path, List<String> lines, boolean self);
 
   /**
-   * Read a specific key's attached comment, if available
-   * @param key Key to read from
-   * @return A list of the comment's lines, null if the key doesn't exist
+   * Read a specific path's attached comment, if available
+   * @param path Path to read from
+   * @param self Whether to read from the key itself or from it's value
+   * @return A list of the comment's lines, null if the path doesn't exist
    *         or there's no comment attached to it yet
    */
-  @Nullable List<String> readComment(String key);
+  @Nullable List<String> readComment(String path, boolean self);
 
 }

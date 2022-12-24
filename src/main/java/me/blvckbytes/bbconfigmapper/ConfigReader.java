@@ -33,7 +33,7 @@ public class ConfigReader {
 
     Object value;
 
-    // The config didn't know this key
+    // The config has no value assigned to this path
     if (!config.exists(key)) {
 
       // Check if it's marked as an expression
@@ -41,7 +41,7 @@ public class ConfigReader {
       if (config.exists(expressionKey))
         value = parseExpressions(config.get(expressionKey));
 
-      // Remember that this key didn't exist
+      // Remember that this key has no value assigned to it
       else {
         cache.put(key, null);
         return null;
