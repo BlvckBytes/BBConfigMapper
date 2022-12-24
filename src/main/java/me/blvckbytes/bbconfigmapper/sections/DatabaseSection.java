@@ -19,6 +19,9 @@ public class DatabaseSection implements IConfigSection {
   private IEvaluable port;
   private IEvaluable database;
 
+  @CSInlined
+  private InlinedSection inlinedSection;
+
   @CSMap(k=IEvaluable.class, v=TestSection.class)
   private Map<IEvaluable, TestSection> myMap;
 
@@ -58,6 +61,7 @@ public class DatabaseSection implements IConfigSection {
       "\nmyMap=" + myMap +
       "\nmyList=" + myList +
       "\nmyScalars=" + myScalars +
+      "\ninlinedSection=" + inlinedSection +
       "\n}";
   }
 }

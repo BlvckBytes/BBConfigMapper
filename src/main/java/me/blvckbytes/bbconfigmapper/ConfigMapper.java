@@ -1,9 +1,6 @@
 package me.blvckbytes.bbconfigmapper;
 
-import me.blvckbytes.bbconfigmapper.sections.CSIgnore;
-import me.blvckbytes.bbconfigmapper.sections.CSList;
-import me.blvckbytes.bbconfigmapper.sections.CSMap;
-import me.blvckbytes.bbconfigmapper.sections.IConfigSection;
+import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.logging.ILogger;
@@ -15,8 +12,6 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
-
-  // TODO: Implement CSInline
 
   private final IConfig config;
   private final ILogger logger;
@@ -203,7 +198,7 @@ public class ConfigMapper implements IConfigMapper {
   }
 
   private Object resolveFieldValue(@Nullable String root, @Nullable Object source, Field f, Class<?> type) throws Exception {
-    String path = joinPaths(root, f.getName());
+    String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, f.getName());
 
     if (IConfigSection.class.isAssignableFrom(type))
       return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
