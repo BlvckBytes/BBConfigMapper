@@ -5,7 +5,9 @@ import me.blvckbytes.bbconfigmapper.IEvaluable;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 public class DatabaseSection implements IConfigSection {
@@ -16,6 +18,9 @@ public class DatabaseSection implements IConfigSection {
   private IEvaluable port;
   private IEvaluable database;
 
+  @CSMap(k=IEvaluable.class, v=TestSection.class)
+  private Map<IEvaluable, TestSection> myMap;
+
   @Override
   public Class<?> runtimeDecide(String field) {
     return null;
@@ -23,6 +28,8 @@ public class DatabaseSection implements IConfigSection {
 
   @Override
   public @Nullable Object defaultFor(Class<?> type, String field) {
+    if (field.equals("myMap"))
+      return new HashMap<>();
     return null;
   }
 
@@ -32,11 +39,12 @@ public class DatabaseSection implements IConfigSection {
   @Override
   public String toString() {
     return "DatabaseSection{" +
-      "username=" + username +
-      ", password=" + password +
-      ", host=" + host +
-      ", port=" + port +
-      ", database=" + database +
-      '}';
+      "\nusername=" + username +
+      "\npassword=" + password +
+      "\nhost=" + host +
+      "\nport=" + port +
+      "\ndatabase=" + database +
+      "\nmyMap=" + myMap +
+      "\n}";
   }
 }

@@ -4,6 +4,9 @@ import me.blvckbytes.bbconfigmapper.sections.DatabaseSection;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
+import me.blvckbytes.gpeee.logging.ILogSourceType;
+import me.blvckbytes.gpeee.logging.ILogger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileReader;
 import java.io.StringWriter;
@@ -70,10 +73,26 @@ public class Main {
     cfg.save(sw);
     System.out.println(sw);
 
+    ILogger logger = new ILogger() {
+
+      @Override
+      public void logDebug(ILogSourceType source, String message) {
+        System.out.println("[DEBUG] [" + source.name() + "]: " + message);
+      }
+
+      @Override
+      public void logError(String message, @Nullable Exception error) {
+        System.err.println(message);
+
+        if (error != null)
+          error.printStackTrace();
+      }
+    };
+
     IExpressionEvaluator evaluator = new GPEEE(null);
     IEvaluationEnvironment environment = GPEEE.EMPTY_ENVIRONMENT;
 
-    ConfigMapper reader = new ConfigMapper(cfg, evaluator);
+    ConfigMapper reader = new ConfigMapper(cfg, logger, evaluator);
 
     IEvaluable value = reader.get("expr_test.lore");
 

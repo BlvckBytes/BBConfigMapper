@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface IConfig {
 
+  // TODO: null path = root
+
   /**
    * Get a value by it's path
    * @param path Path to identify the value
