@@ -11,9 +11,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
+
+  // TODO: Implement CSInline
 
   private final IConfig config;
   private final ILogger logger;
@@ -88,6 +91,9 @@ public class ConfigMapper implements IConfigMapper {
     Class<?> c = type;
     while (c != Object.class) {
       for (Field f : c.getDeclaredFields()) {
+        if (Modifier.isStatic(f.getModifiers()))
+          continue;
+
         if (f.isAnnotationPresent(CSIgnore.class))
           continue;
 
@@ -239,7 +245,23 @@ public class ConfigMapper implements IConfigMapper {
       if (!(value instanceof List))
         return null;
 
-      throw new UnsupportedOperationException("This feature has yet to be implemented");
+      Class<?> listType = listMeta.type();
+      List<Object> result = new ArrayList<>();
+
+      if (IConfigSection.class.isAssignableFrom(listType)) {
+        for (Object item : (List<?>) value)
+          result.add(mapSectionSub(null, item, listType.asSubclass(IConfigSection.class)));
+
+        return result;
+      }
+
+      if (IEvaluable.class.isAssignableFrom(listType)) {
+        for (Object item : (List<?>) value)
+          result.add(new ConfigValue(item, evaluator));
+        return result;
+      }
+
+      throw new IllegalStateException("Unsupported list type specified: " + listType);
     }
 
     if (IEvaluable.class.isAssignableFrom(type))
