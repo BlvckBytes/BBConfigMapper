@@ -29,6 +29,6 @@ public interface IConfigMapper {
    * @param type Type of the class to map
    * @return Mapped instance of specified type
    */
-  <T extends IConfigSection> @Nullable T mapSection(@Nullable String root, Class<T> type) throws Exception;
+  <T extends IConfigSection> T mapSection(@Nullable String root, Class<T> type) throws Exception;
 
 }

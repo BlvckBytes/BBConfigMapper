@@ -7,6 +7,10 @@ import java.util.Map;
 
 public interface IEvaluable {
 
+  /*
+    TODO: Clean this API up by having primitive types as an enum and then describe scalars, lists and maps with it
+   */
+
   long asLong(IEvaluationEnvironment env);
   double asDouble(IEvaluationEnvironment env);
   boolean asBoolean(IEvaluationEnvironment env);
