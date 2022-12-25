@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CSMap {
   Class<?> k();
-  Class<? extends IConfigSection> v();
+  Class<?> v();
 }

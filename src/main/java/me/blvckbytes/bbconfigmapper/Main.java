@@ -90,16 +90,8 @@ public class Main {
     };
 
     IExpressionEvaluator evaluator = new GPEEE(null);
-    IEvaluationEnvironment environment = GPEEE.EMPTY_ENVIRONMENT;
 
     ConfigMapper reader = new ConfigMapper(cfg, logger, evaluator);
-
-    IEvaluable value = reader.get("expr_test.lore");
-
-    if (value != null)
-      System.out.println(String.join("|", value.asStringList(environment)));
-    else
-      System.err.println("Could not find the target key");
 
     DatabaseSection sect = reader.mapSection("sql", DatabaseSection.class);
     System.out.println(sect);

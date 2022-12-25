@@ -15,14 +15,13 @@ import java.util.*;
 public class ConfigMapper implements IConfigMapper {
 
   /*
-    TODO: Cleanup
+    TODO: Support for trailing $ on all evaluable keys when mapping to objects by calling #parseExpressions
     TODO: Add more debug log calls to really get into the inner workings of this recursive mapper
    */
 
   private final IConfig config;
   private final ILogger logger;
   private final IExpressionEvaluator evaluator;
-  private final Map<String, ConfigValue> cache;
 
   /**
    * Create a new config reader on a {@link IConfig}
@@ -34,44 +33,6 @@ public class ConfigMapper implements IConfigMapper {
     this.config = config;
     this.logger = logger;
     this.evaluator = evaluator;
-    this.cache = new HashMap<>();
-  }
-
-  @Override
-  public @Nullable IEvaluable get(String key) {
-    if (cache.containsKey(key))
-      return cache.get(key);
-
-    Object value;
-
-    // The config has no value assigned to this path
-    if (!config.exists(key)) {
-
-      // Check if it's marked as an expression
-      String expressionKey = key + "$";
-      if (config.exists(expressionKey))
-        value = parseExpressions(config.get(expressionKey));
-
-      // Remember that this key has no value assigned to it
-      else {
-        cache.put(key, null);
-        return null;
-      }
-    }
-
-    // Not marked as an expression
-    else
-      value = config.get(key);
-
-    ConfigValue result = new ConfigValue(value, evaluator);
-    cache.put(key, result);
-    return result;
-  }
-
-  @Override
-  public void set(String key, @Nullable Object value) {
-    this.cache.remove(key);
-    config.set(key, value);
   }
 
   @Override
@@ -253,22 +214,30 @@ public class ConfigMapper implements IConfigMapper {
     if (mapMeta.k() != IEvaluable.class)
       throw new IllegalStateException("Unsupported map key type specified: " + mapMeta.k());
 
-    // TODO: Support an IEvaluable as the value type
-    Class<? extends IConfigSection> valueType = mapMeta.v();
-    Map<IEvaluable, Object> result = new HashMap<>();
+    Class<?> valueType = mapMeta.v();
 
-    // Map entries one at a time
-    for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-      IEvaluable keyValue = new ConfigValue(entry.getKey(), evaluator);
-      Object assignedValue = null;
+    if (IConfigSection.class.isAssignableFrom(valueType)) {
+      Map<IEvaluable, Object> result = new HashMap<>();
+      for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+        IEvaluable keyValue = new ConfigValue(entry.getKey(), evaluator);
+        Object assignedValue = null;
 
-      if (entry instanceof Map)
-        assignedValue = mapSectionSub(null, (Map<?, ?>) entry.getValue(), valueType);
+        if (entry instanceof Map)
+          assignedValue = mapSectionSub(null, (Map<?, ?>) entry.getValue(), valueType.asSubclass(IConfigSection.class));
 
-      result.put(keyValue, assignedValue);
+        result.put(keyValue, assignedValue);
+      }
+      return result;
     }
 
-    return result;
+    if (IEvaluable.class.isAssignableFrom(valueType)) {
+      Map<IEvaluable, IEvaluable> result = new HashMap<>();
+      for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
+        result.put(new ConfigValue(entry.getKey(), evaluator), new ConfigValue(entry.getValue(), evaluator));
+      return result;
+    }
+
+    throw new IllegalStateException("Unsupported mapping value type specified: " + valueType);
   }
 
   /**

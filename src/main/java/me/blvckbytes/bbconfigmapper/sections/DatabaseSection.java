@@ -25,6 +25,9 @@ public class DatabaseSection implements IConfigSection {
   @CSMap(k=IEvaluable.class, v=TestSection.class)
   private Map<IEvaluable, TestSection> myMap;
 
+  @CSMap(k=IEvaluable.class, v=IEvaluable.class)
+  private Map<IEvaluable, TestSection> myMap2;
+
   @CSList(type = TestSection.class)
   private List<TestSection> myList;
 
@@ -59,6 +62,7 @@ public class DatabaseSection implements IConfigSection {
       "\nport=" + port +
       "\ndatabase=" + database +
       "\nmyMap=" + myMap +
+      "\nmyMap2=" + myMap2 +
       "\nmyList=" + myList +
       "\nmyScalars=" + myScalars +
       "\ninlinedSection=" + inlinedSection +
