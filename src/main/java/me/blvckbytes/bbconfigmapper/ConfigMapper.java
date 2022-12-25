@@ -16,7 +16,6 @@ public class ConfigMapper implements IConfigMapper {
 
   /*
     TODO: Support for trailing $ on all evaluable keys when mapping to objects by calling #parseExpressions
-    TODO: Add more debug log calls to really get into the inner workings of this recursive mapper
    */
 
   private final IConfig config;
@@ -164,8 +163,16 @@ public class ConfigMapper implements IConfigMapper {
    */
   private @Nullable Object resolvePath(String path, @Nullable Map<?, ?> source) {
     // No object to look in specified, retrieve this path from the config
-    if (source == null)
+    if (source == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "No resolving source provided, looking up in config");
+      //#endif
       return config.get(path);
+    }
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving source provided, walking map");
+    //#endif
 
     int dotIndex = path.indexOf('.');
 
@@ -181,12 +188,20 @@ public class ConfigMapper implements IConfigMapper {
       Object value = source.get(key);
 
       // Last iteration, respond with the current value
-      if (path.length() == 0)
+      if (path.length() == 0) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Walk ended, returning value=" + value);
+        //#endif
         return value;
+      }
 
       // Reached a dead end and not yet at the last iteration
-      if (!(value instanceof Map))
+      if (!(value instanceof Map)) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Path part key=" + key + " wasn't a map, returning null");
+        //#endif
         return null;
+      }
 
       // Swap out the current map reference to navigate forwards
       source = (Map<?, ?>) value;
@@ -203,13 +218,21 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to assign to the field
    */
   private @Nullable Object handleResolveMapField(Field f, Object value) throws Exception {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving map field");
+    //#endif
+
     CSMap mapMeta = f.getAnnotation(CSMap.class);
 
     if (mapMeta == null)
       throw new IllegalStateException("Map fields need to be annotated by @CSMap");
 
-    if (!(value instanceof Map))
+    if (!(value instanceof Map)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Not a map, returning null");
+      //#endif
       return null;
+    }
 
     if (mapMeta.k() != IEvaluable.class)
       throw new IllegalStateException("Unsupported map key type specified: " + mapMeta.k());
@@ -217,13 +240,28 @@ public class ConfigMapper implements IConfigMapper {
     Class<?> valueType = mapMeta.v();
 
     if (IConfigSection.class.isAssignableFrom(valueType)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Mapping values to config sections");
+      //#endif
+
       Map<IEvaluable, Object> result = new HashMap<>();
       for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
         IEvaluable keyValue = new ConfigValue(entry.getKey(), evaluator);
         Object assignedValue = null;
 
-        if (entry instanceof Map)
+        if (entry instanceof Map) {
+          //#if mvn.project.property.production != "true"
+          logger.logDebug(DebugLogSource.MAPPER, "Mapping key=" + entry.getKey() + " to a section");
+          //#endif
+
           assignedValue = mapSectionSub(null, (Map<?, ?>) entry.getValue(), valueType.asSubclass(IConfigSection.class));
+        }
+
+        else {
+          //#if mvn.project.property.production != "true"
+          logger.logDebug(DebugLogSource.MAPPER, "The key=" + entry.getKey() + " is not a map, putting null");
+          //#endif
+        }
 
         result.put(keyValue, assignedValue);
       }
@@ -231,9 +269,18 @@ public class ConfigMapper implements IConfigMapper {
     }
 
     if (IEvaluable.class.isAssignableFrom(valueType)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Mapping values to evaluables");
+      //#endif
+
       Map<IEvaluable, IEvaluable> result = new HashMap<>();
-      for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
+      for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Mapping key=" + entry.getKey() + " to an evaluable");
+        //#endif
         result.put(new ConfigValue(entry.getKey(), evaluator), new ConfigValue(entry.getValue(), evaluator));
+      }
+
       return result;
     }
 
@@ -247,24 +294,48 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to assign to the field
    */
   private @Nullable Object handleResolveListField(Field f, Object value) throws Exception {
-    CSList listMeta = f.getAnnotation(CSList.class);
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving list field");
+    //#endif
 
+    CSList listMeta = f.getAnnotation(CSList.class);
     if (listMeta == null)
       throw new IllegalStateException("List fields need to be annotated by @CSList");
 
-    if (!(value instanceof List))
+    if (!(value instanceof List)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning null");
+      //#endif
       return null;
+    }
 
     Class<?> listType = listMeta.type();
     List<Object> result = new ArrayList<>();
 
     // Is containing other sections as it's entries
     if (IConfigSection.class.isAssignableFrom(listType)) {
-      for (Object item : (List<?>) value) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Mapping items to config sections");
+      //#endif
+
+      List<?> list = (List<?>) value;
+      for (int i = 0; i < list.size(); i++) {
+        Object item = list.get(i);
         Object assignedValue = null;
 
-        if (item instanceof Map)
+        if (item instanceof Map) {
+          //#if mvn.project.property.production != "true"
+          logger.logDebug(DebugLogSource.MAPPER, "Mapping item index=" + i + " to a section");
+          //#endif
+
           assignedValue = mapSectionSub(null, (Map<?, ?>) item, listType.asSubclass(IConfigSection.class));
+        }
+
+        else {
+          //#if mvn.project.property.production != "true"
+          logger.logDebug(DebugLogSource.MAPPER, "The item index=" + i + " is not a map, putting null");
+          //#endif
+        }
 
         result.add(assignedValue);
       }
@@ -274,8 +345,19 @@ public class ConfigMapper implements IConfigMapper {
 
     // Is containing evaluables as it's entries
     if (IEvaluable.class.isAssignableFrom(listType)) {
-      for (Object item : (List<?>) value)
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Mapping items to evaluables");
+      //#endif
+
+      List<?> list = (List<?>) value;
+      for (int i = 0; i < list.size(); i++) {
+        Object item = list.get(i);
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Mapping item index=" + i + " to an evaluable");
+        //#endif
         result.add(new ConfigValue(item, evaluator));
+      }
+
       return result;
     }
 
@@ -294,13 +376,33 @@ public class ConfigMapper implements IConfigMapper {
     String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, f.getName());
     Class<?> type = f.getType();
 
-    if (IConfigSection.class.isAssignableFrom(type))
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
+    //#endif
+
+    if (IConfigSection.class.isAssignableFrom(type)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Type is of another section");
+      //#endif
       return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
+    }
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving path value as plain object");
+    //#endif
 
     Object value = resolvePath(path, source);
 
-    if (value == null)
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolved value=" + value);
+    //#endif
+
+    if (value == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Value is null, returning null");
+      //#endif
       return null;
+    }
 
     if (Map.class.isAssignableFrom(type))
       return handleResolveMapField(f, value);
@@ -308,8 +410,12 @@ public class ConfigMapper implements IConfigMapper {
     if (List.class.isAssignableFrom(type))
       return handleResolveListField(f, value);
 
-    if (IEvaluable.class.isAssignableFrom(type))
+    if (IEvaluable.class.isAssignableFrom(type)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Value is of type evaluable, returning wrapped value");
+      //#endif
       return new ConfigValue(value, evaluator);
+    }
 
     throw new UnsupportedOperationException("Unsupported field type encountered: " + type);
   }
