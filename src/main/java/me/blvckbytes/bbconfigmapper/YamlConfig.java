@@ -1,7 +1,9 @@
 package me.blvckbytes.bbconfigmapper;
 
+import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
+import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -21,33 +23,38 @@ import java.util.function.BiConsumer;
 
 public class YamlConfig implements IConfig {
 
-  private static final LoaderOptions LOADER_OPTIONS;
-  private static final DumperOptions DUMPER_OPTIONS;
+  /*
+    TODO: Add more debug logging calls to capture all details
+   */
 
-  private final Yaml yaml;
+  private static final Yaml YAML;
+
   private final IExpressionEvaluator evaluator;
+  private final ILogger logger;
   private final String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
   private MappingNode rootNode;
 
   static {
-    LOADER_OPTIONS = new LoaderOptions();
-    LOADER_OPTIONS.setProcessComments(true);
-    LOADER_OPTIONS.setAllowDuplicateKeys(false);
+    LoaderOptions loaderOptions = new LoaderOptions();
+    loaderOptions.setProcessComments(true);
+    loaderOptions.setAllowDuplicateKeys(false);
 
-    DUMPER_OPTIONS = new DumperOptions();
-    DUMPER_OPTIONS.setProcessComments(true);
+    DumperOptions dumperOptions = new DumperOptions();
+    dumperOptions.setProcessComments(true);
+
+    YAML = new Yaml(new Constructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions);
   }
 
-  public YamlConfig(IExpressionEvaluator evaluator, String expressionMarkerSuffix) {
-    this.yaml = new Yaml(new Constructor(LOADER_OPTIONS), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, LOADER_OPTIONS);
+  public YamlConfig(IExpressionEvaluator evaluator, ILogger logger, String expressionMarkerSuffix) {
     this.evaluator = evaluator;
+    this.logger = logger;
     this.expressionMarkerSuffix = expressionMarkerSuffix;
     this.locateKeyCache = new HashMap<>();
   }
 
   public void load(Reader reader) {
-    Iterator<Node> nodes = yaml.composeAll(reader).iterator();
+    Iterator<Node> nodes = YAML.composeAll(reader).iterator();
 
     if (!nodes.hasNext())
       throw new IllegalStateException("No node available");
@@ -60,45 +67,83 @@ public class YamlConfig implements IConfig {
     if (!(root instanceof MappingNode))
       throw new IllegalStateException("The top level of a config has to be a map.");
 
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Successfully loaded the YAML root node using the provided reader");
+    //#endif
+
     // Swap out root node and reset key cache
     this.rootNode = (MappingNode) root;
     this.locateKeyCache.clear();
   }
 
   public void save(Writer writer) throws IOException {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Serializing the YAML root node to the provided writer");
+    //#endif
+
     if (this.rootNode == null) {
       writer.write("");
       return;
     }
 
-    yaml.serialize(this.rootNode, writer);
+    YAML.serialize(this.rootNode, writer);
   }
 
   @Override
   public @Nullable Object get(String path) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Object at path=" + path + " has been requested");
+    //#endif
+
     Tuple<@Nullable Node, Boolean> target = locateNode(path, false, false);
-    return target.getA() == null ? null : unwrapNode(target.getA(), target.getB());
+    Object value = target.getA() == null ? null : unwrapNode(target.getA(), target.getB());
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Returning content of path=" + path + " with value=" + value);
+    //#endif
+
+    return value;
   }
 
   @Override
   public void set(String path, @Nullable Object value) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "An update of value=" + value + " at path=" + path + " has been requested");
+    //#endif
     updatePathValue(path, wrapValue(value), true);
   }
 
   @Override
   public void remove(String path) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "The removal of path=" + path + " has been requested");
+    //#endif
     updatePathValue(path, null, false);
   }
 
   @Override
   public boolean exists(String path) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "An existence check of path=" + path + " has been requested");
+    //#endif
+
     // For a key to exist, it's path has to exist within the
     // config, even if it points at a null value
-    return locateNode(path, true, false).getA() != null;
+    boolean exists = locateNode(path, true, false).getA() != null;
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Returning existence value for path=" + path + " of exists=" + exists);
+    //#endif
+
+    return exists;
   }
 
   @Override
   public void attachComment(String path, List<String> lines, boolean self) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
+    //#endif
+
     Node target = locateNode(path, self, false).getA();
 
     if (target == null)
@@ -116,6 +161,10 @@ public class YamlConfig implements IConfig {
 
   @Override
   public @Nullable List<String> readComment(String path, boolean self) {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
+    //#endif
+
     Node target = locateNode(path, self, false).getA();
 
     if (target == null)
@@ -124,8 +173,12 @@ public class YamlConfig implements IConfig {
     List<String> comments = new ArrayList<>();
     List<CommentLine> targetComments = target.getBlockComments();
 
-    if (targetComments == null)
+    if (targetComments == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.YAML, "The path=" + path + " had no attached comments, returning empty list");
+      //#endif
       return comments;
+    }
 
     for (CommentLine comment : targetComments) {
       if (comment.getCommentType() == CommentType.BLANK_LINE) {
@@ -135,6 +188,10 @@ public class YamlConfig implements IConfig {
 
       comments.add(comment.getValue());
     }
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.YAML, "Returning comments for path=" + path + " comments=" + comments);
+    //#endif
 
     return comments;
   }

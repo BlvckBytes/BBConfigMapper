@@ -19,8 +19,24 @@ public class Main {
     FileReader fr = new FileReader("/Users/blvckbytes/Desktop/test.yml");
 
     IExpressionEvaluator evaluator = new GPEEE(null);
+    ILogger logger = new ILogger() {
 
-    YamlConfig cfg = new YamlConfig(evaluator, "$");
+      @Override
+      public void logDebug(ILogSourceType source, String message) {
+        System.out.println("[DEBUG] [" + source.name() + "]: " + message);
+      }
+
+      @Override
+      public void logError(String message, @Nullable Exception error) {
+        System.err.println(message);
+
+        if (error != null)
+          error.printStackTrace();
+      }
+    };
+
+
+    YamlConfig cfg = new YamlConfig(evaluator, logger, "$");
     cfg.load(fr);
 
     cfg.attachComment("my_keys.hello", List.of(
@@ -73,22 +89,6 @@ public class Main {
     StringWriter sw = new StringWriter();
     cfg.save(sw);
     System.out.println(sw);
-
-    ILogger logger = new ILogger() {
-
-      @Override
-      public void logDebug(ILogSourceType source, String message) {
-        System.out.println("[DEBUG] [" + source.name() + "]: " + message);
-      }
-
-      @Override
-      public void logError(String message, @Nullable Exception error) {
-        System.err.println(message);
-
-        if (error != null)
-          error.printStackTrace();
-      }
-    };
 
     ConfigMapper reader = new ConfigMapper(cfg, logger, evaluator);
 
