@@ -94,6 +94,6 @@ public class Main {
 
     DatabaseSection sect = reader.mapSection("sql", DatabaseSection.class);
     System.out.println(sect);
-    System.out.println(sect.getMyList().get(0).getB().asString(GPEEE.EMPTY_ENVIRONMENT));
+    System.out.println((String) sect.getMyList().get(0).getB().asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
   }
 }

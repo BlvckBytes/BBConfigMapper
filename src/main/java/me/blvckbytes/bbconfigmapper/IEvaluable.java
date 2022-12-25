@@ -7,23 +7,10 @@ import java.util.Map;
 
 public interface IEvaluable {
 
-  /*
-    TODO: Clean this API up by having primitive types as an enum and then describe scalars, lists and maps with it
-   */
+  <T> T asScalar(ScalarType type, IEvaluationEnvironment env);
 
-  long asLong(IEvaluationEnvironment env);
-  double asDouble(IEvaluationEnvironment env);
-  boolean asBoolean(IEvaluationEnvironment env);
-  String asString(IEvaluationEnvironment env);
+  <T, U> Map<T, U> asMap(ScalarType key, ScalarType value, IEvaluationEnvironment env);
 
-  List<Long> asLongList(IEvaluationEnvironment env);
-  List<Double> asDoubleList(IEvaluationEnvironment env);
-  List<Boolean> asBooleanList(IEvaluationEnvironment env);
-  List<String> asStringList(IEvaluationEnvironment env);
-
-  Map<Object, Long> asLongMap(IEvaluationEnvironment env);
-  Map<Object, Double> asDoubleMap(IEvaluationEnvironment env);
-  Map<Object, Boolean> asBooleanMap(IEvaluationEnvironment env);
-  Map<Object, String> asStringMap(IEvaluationEnvironment env);
+  <T> List<T> asList(ScalarType type, IEvaluationEnvironment env);
 
 }

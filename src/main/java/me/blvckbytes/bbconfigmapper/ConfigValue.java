@@ -16,7 +16,7 @@ public class ConfigValue implements IEvaluable {
   private final IExpressionEvaluator evaluator;
 
   // If the cached value is a list or map, this will be the value type which had been used
-  private @Nullable Class<?> cachedGenericType;
+  private @Nullable ScalarType[] cachedGenericTypes;
   private @Nullable Object cachedValue;
 
   public ConfigValue(@Nullable Object value, IExpressionEvaluator evaluator) {
@@ -25,71 +25,21 @@ public class ConfigValue implements IEvaluable {
   }
 
   @Override
-  public long asLong(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, long.class, null, env);
-  }
-
-  @Override
-  public double asDouble(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, double.class, null, env);
-  }
-
-  @Override
-  public boolean asBoolean(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, boolean.class, null, env);
-  }
-
-  @Override
-  public String asString(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, String.class, null, env);
+  @SuppressWarnings("unchecked")
+  public <T> T asScalar(ScalarType type, IEvaluationEnvironment env) {
+    return (T) interpretOrReadCache(value, type.getType(), null, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public List<Long> asLongList(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, List.class, Long.class, env);
+  public <T> List<T> asList(ScalarType type, IEvaluationEnvironment env) {
+    return (List<T>) interpretOrReadCache(value, List.class, new ScalarType[] { type }, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public List<Double> asDoubleList(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, List.class, Double.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public List<Boolean> asBooleanList(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, List.class, Boolean.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public List<String> asStringList(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, List.class, String.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Map<Object, Long> asLongMap(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, Map.class, Long.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Map<Object, Double> asDoubleMap(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, Map.class, Double.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Map<Object, Boolean> asBooleanMap(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, Map.class, Boolean.class, env);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Map<Object, String> asStringMap(IEvaluationEnvironment env) {
-    return interpretOrReadCache(value, Map.class, String.class, env);
+  public <T, U> Map<T, U> asMap(ScalarType key, ScalarType value, IEvaluationEnvironment env) {
+    return (Map<T, U>) interpretOrReadCache(value, Map.class, new ScalarType[] { key, value }, env);
   }
 
   /**
@@ -102,64 +52,78 @@ public class ConfigValue implements IEvaluable {
    * @return Guaranteed non-Null value of the requested type
    */
   @SuppressWarnings("unchecked")
-  private<T> T interpretScalar(@Nullable Object input, Class<T> type, IEvaluationEnvironment env) {
-    if (type.isInstance(input))
+  private<T> T interpretScalar(@Nullable Object input, ScalarType type, IEvaluationEnvironment env) {
+    Class<?> typeClass = type.getType();
+
+    if (typeClass.isInstance(input))
       return (T) input;
 
     // The input is an expression which needs to be evaluated first
     if (input instanceof AExpression)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
 
-    Object res;
+    return (T) type.getInterpreter().apply(input, env);
+  }
 
-    if (type == long.class || type == Long.class)
-      res = env.getValueInterpreter().asLong(input);
+  /**
+   * Compares two generic type arrays and only returns true if both depict the same types
+   * @param genericTypesA Array A
+   * @param genericTypesB Array B
+   * @return True on match, false otherwise
+   */
+  private boolean doGenericTypesEqual(@Nullable ScalarType[] genericTypesA, @Nullable ScalarType[] genericTypesB) {
+    // Both are null - was a scalar
+    if (genericTypesA == null && genericTypesB == null)
+      return true;
 
-    else if (type == double.class || type == Double.class)
-      res = env.getValueInterpreter().asDouble(input);
+    // Only one is null, does not match
+    if (genericTypesA == null || genericTypesB == null)
+      return false;
 
-    else if (type == String.class)
-      res = env.getValueInterpreter().asString(input);
+    // Amount of generics mismatch
+    if (genericTypesA.length != genericTypesB.length)
+      return false;
 
-    else if (type == boolean.class || type == Boolean.class)
-      res = env.getValueInterpreter().asBoolean(input);
+    // Compare array entries
+    for (int i = 0; i < genericTypesA.length; i++) {
+      if (genericTypesA[i] != genericTypesB[i])
+        return false;
+    }
 
-    else
-      throw new IllegalStateException("Unsupported value type requested");
-
-    return (T) res;
+    // All entries matched
+    return true;
   }
 
   /**
    * Interpret a nullable input value as a scalar, list or map configuration
-   * value by making use of {@link #interpretScalar(Object, Class, IEvaluationEnvironment)}
+   * value by making use of {@link #interpretScalar}
    * to either convert to a scalar value or to convert list items / map values to the
    * requested scalar type before responding. Responses are cached in order to not compute
    * the same request twice in a row
    * @param input Nullable value input
    * @param type Required result type
-   * @param genericType Scalar type of a list/map (null for scalar requests)
+   * @param genericTypes Scalar types of a list/map (null for scalar requests)
    * @param env Environment used to interpret and evaluate with
    * @return Guaranteed non-null value of the requested type
    */
   @SuppressWarnings("unchecked")
-  private<T> T interpretOrReadCache(@Nullable Object input, Class<T> type, @Nullable Class<?> genericType, IEvaluationEnvironment env) {
+  private<T> T interpretOrReadCache(@Nullable Object input, Class<T> type, @Nullable ScalarType[] genericTypes, IEvaluationEnvironment env) {
 
     // The cached value is of the requested type, both as a host type as well as it's generic type (if applicable)
-    if (type.isInstance(cachedValue) && (cachedGenericType == genericType))
+    if (type.isInstance(cachedValue) && doGenericTypesEqual(cachedGenericTypes, genericTypes))
       return (T) cachedValue;
 
     if (type == List.class) {
 
-      if (genericType == null)
+      if (genericTypes == null || genericTypes.length < 1 || genericTypes[0] == null)
         throw new IllegalStateException("Cannot require a List without specifying a generic type");
 
-      cachedGenericType = genericType;
+      cachedGenericTypes = genericTypes;
 
       // Is not a list, interpret the value as the requested generic type
       // and return a list with that one entry only
       if (!(input instanceof List)) {
-        cachedValue = List.of(interpretScalar(input, genericType, env));
+        cachedValue = List.of(interpretScalar(input, genericTypes[0], env));
         return (T) cachedValue;
       }
 
@@ -168,7 +132,7 @@ public class ConfigValue implements IEvaluable {
 
       // Interpret each item as the requested generic type
       for (Object item : items)
-        results.add(interpretScalar(item, genericType, env));
+        results.add(interpretScalar(item, genericTypes[0], env));
 
       cachedValue = results;
       return (T) cachedValue;
@@ -176,13 +140,14 @@ public class ConfigValue implements IEvaluable {
 
     if (type == Map.class) {
 
-      if (genericType == null)
-        throw new IllegalStateException("Cannot require a Map without specifying a generic type");
+      if (genericTypes == null || genericTypes.length < 2 || genericTypes[0] == null || genericTypes[1] == null) {
+        throw new IllegalStateException("Cannot require a Map without specifying generic types");
+      }
 
       // Null will just be the empty map
       if (input == null) {
         cachedValue = Map.of();
-        cachedGenericType = genericType;
+        cachedGenericTypes = genericTypes;
         return (T) cachedValue;
       }
 
@@ -194,14 +159,19 @@ public class ConfigValue implements IEvaluable {
 
       // Interpret each value as the requested generic type
       for (Map.Entry<?, ?> entry : items.entrySet())
-        results.put(entry.getKey(), interpretScalar(entry.getValue(), genericType, env));
+        results.put(interpretScalar(entry.getKey(), genericTypes[0], env), interpretScalar(entry.getValue(), genericTypes[1], env));
 
-      cachedGenericType = genericType;
+      cachedGenericTypes = genericTypes;
       cachedValue = results;
       return (T) cachedValue;
     }
 
-    cachedValue = interpretScalar(input, type, env);
+    ScalarType scalarType = ScalarType.fromClass(type);
+
+    if (scalarType == null)
+      throw new IllegalStateException("Unknown scalar type provided: " + type);
+
+    cachedValue = interpretScalar(input, scalarType, env);
     return (T) cachedValue;
   }
 
