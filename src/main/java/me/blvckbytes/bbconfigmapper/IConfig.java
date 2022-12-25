@@ -6,31 +6,29 @@ import java.util.List;
 
 public interface IConfig {
 
-  // TODO: null path = root
-
   /**
    * Get a value by it's path
    * @param path Path to identify the value
    */
-  @Nullable Object get(String path);
+  @Nullable Object get(@Nullable String path);
 
   /**
    * Set a value by it's path
    * @param path Path to identify the value
    */
-  void set(String path, @Nullable Object value);
+  void set(@Nullable String path, @Nullable Object value);
 
   /**
    * Remove a key and all of it's children by it's path
    * @param path Path to identify the key
    */
-  void remove(String path);
+  void remove(@Nullable String path);
 
   /**
    * Check whether a given path exists within the configuration file
    * @param path Path to identify the value
    */
-  boolean exists(String path);
+  boolean exists(@Nullable String path);
 
   /**
    * Attach a comment to a specific path
@@ -38,7 +36,7 @@ public interface IConfig {
    * @param lines Lines of text in the comment
    * @param self Whether to attach to the key itself or to it's value
    */
-  void attachComment(String path, List<String> lines, boolean self);
+  void attachComment(@Nullable String path, List<String> lines, boolean self);
 
   /**
    * Read a specific path's attached comment, if available
@@ -47,6 +45,6 @@ public interface IConfig {
    * @return A list of the comment's lines, null if the path doesn't exist
    *         or there's no comment attached to it yet
    */
-  @Nullable List<String> readComment(String path, boolean self);
+  @Nullable List<String> readComment(@Nullable String path, boolean self);
 
 }

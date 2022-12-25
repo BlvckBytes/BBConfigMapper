@@ -90,7 +90,7 @@ public class YamlConfig implements IConfig {
   }
 
   @Override
-  public @Nullable Object get(String path) {
+  public @Nullable Object get(@Nullable String path) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "Object at path=" + path + " has been requested");
     //#endif
@@ -106,23 +106,48 @@ public class YamlConfig implements IConfig {
   }
 
   @Override
-  public void set(String path, @Nullable Object value) {
+  public void set(@Nullable String path, @Nullable Object value) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "An update of value=" + value + " at path=" + path + " has been requested");
     //#endif
-    updatePathValue(path, wrapValue(value), true);
+
+    Node wrappedValue = wrapValue(value);
+
+    if (path == null) {
+      if (!(wrappedValue instanceof MappingNode))
+        throw new IllegalArgumentException("Cannot exchange the root-node for a non-map node");
+
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.YAML, "Swapped out the root node");
+      //#endif
+
+      rootNode = (MappingNode) wrappedValue;
+      return;
+    }
+
+    updatePathValue(path, wrappedValue, true);
   }
 
   @Override
-  public void remove(String path) {
+  public void remove(@Nullable String path) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "The removal of path=" + path + " has been requested");
     //#endif
+
+    if (path == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.YAML, "Reset the root node");
+      //#endif
+
+      rootNode = new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DumperOptions.FlowStyle.AUTO);
+      return;
+    }
+
     updatePathValue(path, null, false);
   }
 
   @Override
-  public boolean exists(String path) {
+  public boolean exists(@Nullable String path) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "An existence check of path=" + path + " has been requested");
     //#endif
@@ -139,7 +164,7 @@ public class YamlConfig implements IConfig {
   }
 
   @Override
-  public void attachComment(String path, List<String> lines, boolean self) {
+  public void attachComment(@Nullable String path, List<String> lines, boolean self) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
     //#endif
@@ -160,7 +185,7 @@ public class YamlConfig implements IConfig {
   }
 
   @Override
-  public @Nullable List<String> readComment(String path, boolean self) {
+  public @Nullable List<String> readComment(@Nullable String path, boolean self) {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
     //#endif
@@ -298,12 +323,15 @@ public class YamlConfig implements IConfig {
 
   /**
    * Locates a target node by it's identifying path
-   * @param path Path to search for
+   * @param path Path to search for, null means root
    * @param self Whether to locate the containing key or the value (self means the key)
    * @return A tuple of the target node or null if the target node didn't exist
    *         as well as a boolean marking whether this path was marked for expressions
    */
-  private @NotNull Tuple<@Nullable Node, Boolean> locateNode(String path, boolean self, boolean forceCreateMappings) {
+  private @NotNull Tuple<@Nullable Node, Boolean> locateNode(@Nullable String path, boolean self, boolean forceCreateMappings) {
+    if (path == null)
+      return Tuple.of(rootNode, false);
+
     // Keys should never contain any whitespace
     path = path.trim();
 
