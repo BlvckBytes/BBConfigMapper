@@ -14,10 +14,6 @@ import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
 
-  /*
-    TODO: Support for trailing $ on all evaluable keys when mapping to objects by calling #parseExpressions
-   */
-
   private final IConfig config;
   private final ILogger logger;
   private final IExpressionEvaluator evaluator;
@@ -456,58 +452,5 @@ public class ConfigMapper implements IConfigMapper {
     } catch (NoSuchMethodException e) {
       throw new IllegalStateException("Please specify an empty default constructor");
     }
-  }
-
-  /**
-   * Parses all available expressions within the input value, if applicable. Scalar values will
-   * be passed through without modification, while others (including strings) will be parsed as
-   * an expression. If a collection is encountered, it's entries will be ran through this
-   * routine internally before returning, the same concept applies to maps and their keys.
-   * @param input Input value
-   * @return Output value with parsed expressions, if applicable
-   */
-  private @Nullable Object parseExpressions(@Nullable Object input) {
-    // There's no need to evaluate an expression just to receive back a scalar value again
-    if (isScalarValue(input))
-      return input;
-
-    if (input instanceof Collection) {
-      List<Object> result = new ArrayList<>();
-
-      for (Object item : ((Collection<?>) input))
-        result.add(parseExpressions(item));
-
-      return result;
-    }
-
-    if (input instanceof Map) {
-      Map<Object, Object> result = new HashMap<>();
-
-      for (Map.Entry<?, ?> entry : ((Map<?, ?>) input).entrySet())
-        result.put(entry.getKey(), parseExpressions(entry.getValue()));
-
-      return result;
-    }
-
-    // Interpret as a scalar value
-    return evaluator.optimizeExpression(evaluator.parseString(input.toString()));
-  }
-
-  /**
-   * Checks whether a value is a scalar value, meaning that it cannot
-   * hold any evaluable expressions and thus can be passed straight through
-   * @param input Input value to check
-   * @return True if scalar, false if evaluable
-   */
-  private boolean isScalarValue(@Nullable Object input) {
-    return (
-      input == null ||
-        input instanceof Double ||
-        input instanceof Float ||
-        input instanceof Integer ||
-        input instanceof Long ||
-        input instanceof Byte ||
-        input instanceof Short
-    );
   }
 }

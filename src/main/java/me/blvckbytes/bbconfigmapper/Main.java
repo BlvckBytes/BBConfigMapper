@@ -3,7 +3,6 @@ package me.blvckbytes.bbconfigmapper;
 import me.blvckbytes.bbconfigmapper.sections.DatabaseSection;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
-import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
 import me.blvckbytes.gpeee.logging.ILogSourceType;
 import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +18,9 @@ public class Main {
   public static void main(String[] args) throws Exception {
     FileReader fr = new FileReader("/Users/blvckbytes/Desktop/test.yml");
 
-    YamlConfig cfg = new YamlConfig();
+    IExpressionEvaluator evaluator = new GPEEE(null);
+
+    YamlConfig cfg = new YamlConfig(evaluator, "$");
     cfg.load(fr);
 
     cfg.attachComment("my_keys.hello", List.of(
@@ -89,11 +90,10 @@ public class Main {
       }
     };
 
-    IExpressionEvaluator evaluator = new GPEEE(null);
-
     ConfigMapper reader = new ConfigMapper(cfg, logger, evaluator);
 
     DatabaseSection sect = reader.mapSection("sql", DatabaseSection.class);
     System.out.println(sect);
+    System.out.println(sect.getMyList().get(0).getB().asString(GPEEE.EMPTY_ENVIRONMENT));
   }
 }

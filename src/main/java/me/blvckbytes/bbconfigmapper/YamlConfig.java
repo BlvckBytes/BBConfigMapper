@@ -1,5 +1,8 @@
 package me.blvckbytes.bbconfigmapper;
 
+import me.blvckbytes.gpeee.IExpressionEvaluator;
+import me.blvckbytes.gpeee.Tuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -22,6 +25,8 @@ public class YamlConfig implements IConfig {
   private static final DumperOptions DUMPER_OPTIONS;
 
   private final Yaml yaml;
+  private final IExpressionEvaluator evaluator;
+  private final String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
   private MappingNode rootNode;
 
@@ -34,8 +39,10 @@ public class YamlConfig implements IConfig {
     DUMPER_OPTIONS.setProcessComments(true);
   }
 
-  public YamlConfig() {
+  public YamlConfig(IExpressionEvaluator evaluator, String expressionMarkerSuffix) {
     this.yaml = new Yaml(new Constructor(LOADER_OPTIONS), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, LOADER_OPTIONS);
+    this.evaluator = evaluator;
+    this.expressionMarkerSuffix = expressionMarkerSuffix;
     this.locateKeyCache = new HashMap<>();
   }
 
@@ -69,8 +76,8 @@ public class YamlConfig implements IConfig {
 
   @Override
   public @Nullable Object get(String path) {
-    Node target = locateNode(path, false, false);
-    return target == null ? null : unwrapNode(target);
+    Tuple<@Nullable Node, Boolean> target = locateNode(path, false, false);
+    return target.getA() == null ? null : unwrapNode(target.getA(), target.getB());
   }
 
   @Override
@@ -87,12 +94,12 @@ public class YamlConfig implements IConfig {
   public boolean exists(String path) {
     // For a key to exist, it's path has to exist within the
     // config, even if it points at a null value
-    return locateNode(path, true, false) != null;
+    return locateNode(path, true, false).getA() != null;
   }
 
   @Override
   public void attachComment(String path, List<String> lines, boolean self) {
-    Node target = locateNode(path, self, false);
+    Node target = locateNode(path, self, false).getA();
 
     if (target == null)
       throw new IllegalStateException("Cannot attach a comment to a non-existing path");
@@ -109,7 +116,7 @@ public class YamlConfig implements IConfig {
 
   @Override
   public @Nullable List<String> readComment(String path, boolean self) {
-    Node target = locateNode(path, self, false);
+    Node target = locateNode(path, self, false).getA();
 
     if (target == null)
       return null;
@@ -152,7 +159,7 @@ public class YamlConfig implements IConfig {
     // Look up the container by the path provided before the last dot (in force mapping creation mode)
     else {
       keyPart = keyPath.substring(lastDotIndex + 1);
-      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings);
+      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).getA();
     }
 
     if (container == null || keyPart.isBlank())
@@ -236,13 +243,15 @@ public class YamlConfig implements IConfig {
    * Locates a target node by it's identifying path
    * @param path Path to search for
    * @param self Whether to locate the containing key or the value (self means the key)
-   * @return Target node or null if the target node didn't exist
+   * @return A tuple of the target node or null if the target node didn't exist
+   *         as well as a boolean marking whether this path was marked for expressions
    */
-  private @Nullable Node locateNode(String path, boolean self, boolean forceCreateMappings) {
+  private @NotNull Tuple<@Nullable Node, Boolean> locateNode(String path, boolean self, boolean forceCreateMappings) {
     // Keys should never contain any whitespace
     path = path.trim();
 
     Node node = rootNode;
+    boolean markedForExpressions = false;
 
     int endIndex = path.indexOf('.'), beginIndex = 0;
 
@@ -257,10 +266,22 @@ public class YamlConfig implements IConfig {
 
       // Not a mapping node, cannot look up a path-part, the key has to be invalid
       if (!(node instanceof MappingNode))
-        return null;
+        return Tuple.of(null, markedForExpressions);
 
       MappingNode mapping = (MappingNode) node;
       NodeTuple keyValueTuple = locateKey(mapping, pathPart);
+      boolean markedAlready = pathPart.endsWith(expressionMarkerSuffix);
+
+      // The k-v tuple could not be located and isn't marked for expressions already
+      // Try to append the expression marker and check for a match again
+      if (keyValueTuple == null && !markedAlready) {
+        keyValueTuple = locateKey(mapping, pathPart + expressionMarkerSuffix);
+        markedAlready = true;
+      }
+
+      // There was a tuple available and it carried the expression marker
+      if (keyValueTuple != null && markedAlready)
+        markedForExpressions = true;
 
       // Target tuple could not be located or is of wrong value type, create a
       // new tuple of value type mapping and set it within the tree
@@ -277,7 +298,7 @@ public class YamlConfig implements IConfig {
 
       // Current path-part does not exist
       if (keyValueTuple == null)
-        return null;
+        return Tuple.of(null, markedForExpressions);
 
       // On the last iteration and the key itself has been requested
       if (endIndex == path.length() && self)
@@ -297,7 +318,7 @@ public class YamlConfig implements IConfig {
         break;
     }
 
-    return node;
+    return Tuple.of(node, markedForExpressions);
   }
 
   /**
@@ -340,17 +361,18 @@ public class YamlConfig implements IConfig {
    * Unwraps any given node by unwrapping scalar values first, then - if applicable - collecting them
    * into maps or lists, as by the node's tag. Null tags will result in null values.
    * @param node Node to unwrap
+   * @param markedForExpressions Whether expressions should be parsed
    * @return Unwrapped node as a Java value
    */
-  private @Nullable Object unwrapNode(Node node) {
+  private @Nullable Object unwrapNode(Node node, boolean markedForExpressions) {
     if (node instanceof ScalarNode)
-      return unwrapScalarNode((ScalarNode) node);
+      return unwrapScalarNode((ScalarNode) node, markedForExpressions);
 
     if (node instanceof SequenceNode) {
       List<Object> values = new ArrayList<>();
 
       for (Node item : ((SequenceNode) node).getValue())
-        values.add(unwrapNode(item));
+        values.add(unwrapNode(item, markedForExpressions));
 
       return values;
     }
@@ -358,8 +380,25 @@ public class YamlConfig implements IConfig {
     if (node instanceof MappingNode) {
       Map<Object, Object> values = new HashMap<>();
 
-      for (NodeTuple item : ((MappingNode) node).getValue())
-        values.put(unwrapNode(item.getKeyNode()), unwrapNode(item.getValueNode()));
+      for (NodeTuple item : ((MappingNode) node).getValue()) {
+        boolean isItemMarkedForExpressions = markedForExpressions;
+
+        // Expressions within keys are - of course - not supported
+        Object key = unwrapNode(item.getKeyNode(), false);
+
+        // If the key is a string, it might hold an attached marker which needs to be stripped off
+        if (key instanceof String) {
+          String keyS = (String) key;
+
+          // Strip of trailing marker, also mark for expressions (if not marked already)
+          if (keyS.endsWith(expressionMarkerSuffix)) {
+            key = keyS.substring(0, keyS.length() - 1);
+            isItemMarkedForExpressions = true;
+          }
+        }
+
+        values.put(key, unwrapNode(item.getValueNode(), isItemMarkedForExpressions));
+      }
 
       return values;
     }
@@ -407,13 +446,19 @@ public class YamlConfig implements IConfig {
   /**
    * Unwraps a {@link ScalarNode} to a java type
    * @param node Node to unwrap
+   * @param markedForExpressions Whether expressions should be parsed
    * @return Unwrapped java value
    */
-  private @Nullable Object unwrapScalarNode(ScalarNode node) {
+  private @Nullable Object unwrapScalarNode(ScalarNode node, boolean markedForExpressions) {
     Tag tag = node.getTag();
 
     if (tag == Tag.NULL)
       return null;
+
+    // If a node is marked for expression either itself or by a parent node, it
+    // will be parsed as such, no matter it's tag, as it's a user-choice
+    if (markedForExpressions)
+      return evaluator.optimizeExpression(evaluator.parseString(node.getValue()));
 
     if (tag == Tag.STR)
       return node.getValue();
