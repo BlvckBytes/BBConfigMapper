@@ -29,10 +29,10 @@ public class YamlConfigReadTests {
   @Test
   public void shouldUnwrapLists() throws FileNotFoundException {
     YamlConfig config = helper.makeConfig("sequences.yml");
-    assertEquals(List.of("first", "second", "third"), config.get("a"));
-    assertEquals(List.of(21L, false, .3D), config.get("b.c"));
-    assertEquals(List.of("nested", List.of("list", "items")), config.get("b.d"));
-    assertEquals(List.of("nested", helper.map("a", "mapping", "b", 12L)), config.get("b.e"));
+    assertEquals(helper.list("first", "second", "third"), config.get("a"));
+    assertEquals(helper.list(21L, false, .3D), config.get("b.c"));
+    assertEquals(helper.list("nested", helper.list("list", "items")), config.get("b.d"));
+    assertEquals(helper.list("nested", helper.map("a", "mapping", "b", 12L)), config.get("b.e"));
   }
 
   @Test
@@ -40,7 +40,7 @@ public class YamlConfigReadTests {
     YamlConfig config = helper.makeConfig("mappings.yml");
     assertEquals(helper.map("b", "first", "c", "second", "d", 3L), config.get("a"));
     assertEquals(helper.map("c", "nested", "d", helper.map("e", "mapping", "f", 1.2D)), config.get("b"));
-    assertEquals(helper.map("h", "nested", "i", List.of("list", "items")), config.get("g"));
+    assertEquals(helper.map("h", "nested", "i", helper.list("list", "items")), config.get("g"));
   }
 
   @Test

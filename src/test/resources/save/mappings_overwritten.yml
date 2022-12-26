@@ -8,9 +8,9 @@ b:
   c: nested
   d:
     e:
-    - 1
+    - 1.2
     - 2
-    - 3
+    - null
     f:
       hello: world
 

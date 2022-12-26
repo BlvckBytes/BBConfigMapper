@@ -200,13 +200,6 @@ public class YamlConfig implements IConfig {
     List<String> comments = new ArrayList<>();
     List<CommentLine> targetComments = target.getBlockComments();
 
-    if (targetComments == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.YAML, "The path=" + path + " had no attached comments, returning empty list");
-      //#endif
-      return comments;
-    }
-
     for (CommentLine comment : targetComments) {
       if (comment.getCommentType() == CommentType.BLANK_LINE) {
         comments.add("\n");

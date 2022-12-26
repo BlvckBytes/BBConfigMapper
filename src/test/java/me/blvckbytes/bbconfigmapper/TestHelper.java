@@ -13,9 +13,7 @@ import java.io.FileReader;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -125,6 +123,15 @@ public class TestHelper {
       result.put(values[i], values[i + 1]);
 
     return result;
+  }
+
+  /**
+   * Creates an ordered list of values by adding all values to a list
+   * @param values Values to add to the list
+   * @return Ordered list
+   */
+  public List<Object> list(Object... values) {
+    return new ArrayList<>(Arrays.asList(values));
   }
 
   /**

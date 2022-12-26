@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class YamlConfigWriteTests {
 
@@ -42,9 +41,9 @@ public class YamlConfigWriteTests {
   @Test
   public void shouldOverwriteKeys() throws Exception {
     YamlConfig config = helper.makeConfig("mappings.yml");
-    helper.assertSetInMemory("g.i", List.of("this", "has", "been", "overwritten"), config);
+    helper.assertSetInMemory("g.i", helper.list("this", "has", "been", "overwritten"), config);
     helper.assertSetInMemory("a", helper.map("b", 21L, "x", "hello", "d", helper.map("y", false)), config);
-    helper.assertSetInMemory("b.d", helper.map("e", List.of(1L, 2L, 3L), "f", helper.map("hello", "world")), config);
+    helper.assertSetInMemory("b.d", helper.map("e", helper.list(1.2D, 2L, null), "f", helper.map("hello", "world")), config);
     helper.assertSave("mappings_overwritten.yml", config);
   }
 
@@ -66,7 +65,7 @@ public class YamlConfigWriteTests {
   @Test
   public void shouldRefuseToExchangeRootNodeForNonMapping() throws Exception {
     YamlConfig config = helper.makeConfig("mappings.yml");
-    helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> helper.assertSetInMemory(null, List.of(1, 2, 3), config), "Cannot exchange the root-node for a non-map node");
+    helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> helper.assertSetInMemory(null, helper.list(1, 2, 3), config), "Cannot exchange the root-node for a non-map node");
     helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> helper.assertSetInMemory(null, 12, config), "Cannot exchange the root-node for a non-map node");
     helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> helper.assertSetInMemory(null, "hello, world", config), "Cannot exchange the root-node for a non-map node");
   }
