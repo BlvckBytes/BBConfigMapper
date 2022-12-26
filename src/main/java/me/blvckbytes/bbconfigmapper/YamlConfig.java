@@ -252,13 +252,15 @@ public class YamlConfig implements IConfig {
     // Check if there's an existing tuple
     NodeTuple existingTuple = locateKey(container, keyPart);
     Node existingKey = null;
+    int existingIndex = -1;
 
     invalidateLocateKeyCacheFor(container, keyPart);
 
     // Remove an existing tuple from the map
     if (existingTuple != null) {
       existingKey = existingTuple.getKeyNode();
-      container.getValue().remove(existingTuple);
+      existingIndex = container.getValue().indexOf(existingTuple);
+      container.getValue().remove(existingIndex);
 
       // If the just removed tuple held a mapping node as it#s value, invalidate
       // all children mappings within that tuple recursively
@@ -268,8 +270,15 @@ public class YamlConfig implements IConfig {
     }
 
     // Create a new tuple for this value, if provided
-    if (value != null)
-      container.getValue().add(createNewTuple(existingKey, keyPart, value));
+    if (value != null) {
+      NodeTuple newTuple = createNewTuple(existingKey, keyPart, value);
+
+      // Preserve it's index within the list of tuples
+      if (existingIndex >= 0)
+        container.getValue().add(existingIndex, newTuple);
+      else
+        container.getValue().add(newTuple);
+    }
   }
 
   /**
