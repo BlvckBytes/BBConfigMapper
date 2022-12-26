@@ -2,7 +2,6 @@ package me.blvckbytes.bbconfigmapper;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
 

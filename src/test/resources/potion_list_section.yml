@@ -1,0 +1,14 @@
+type: throwable
+effects:
+-
+  effect: damage
+  duration: 120
+  amplifier: 2
+-
+  effect: healing
+  duration: 0
+  amplifier: 1
+-
+  effect: regeneration
+  duration: 10
+  amplifier: 3

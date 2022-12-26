@@ -2,6 +2,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
+import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
 import me.blvckbytes.gpeee.logging.ILogger;
 import me.blvckbytes.gpeee.logging.NullLogger;
 import me.blvckbytes.gpeee.parser.expression.AExpression;
@@ -30,6 +31,13 @@ public class TestHelper {
   }
 
   /**
+   * Get the standard environment to evaluate in
+   */
+  public IEvaluationEnvironment getEnv() {
+    return GPEEE.EMPTY_ENVIRONMENT;
+  }
+
+  /**
    * Create a new config instance and load it's contents from a yaml file
    * @param fileName Input file within the resources folder, null to not load at all
    * @return Loaded yaml configuration instance
@@ -44,13 +52,24 @@ public class TestHelper {
   }
 
   /**
+   * Create a new config instance on the provided path and then create a
+   * new mapper instance on top of that configuration instance
+   * @param fileName Input file within the resources folder
+   * @return Mapper instance, operating on the configuration instance
+   */
+  public IConfigMapper makeMapper(String fileName) throws FileNotFoundException {
+    YamlConfig config = makeConfig(fileName);
+    return new ConfigMapper(config, this.logger, this.evaluator);
+  }
+
+  /**
    * Assert that a config value is an expression and that it evaluates to the expected value
    * @param expected Expected expression value
    * @param expression Expression to check
    */
   public void assertExpression(Object expected, Object expression) {
     assertTrue(expression instanceof AExpression);
-    assertEquals(expected, this.evaluator.evaluateExpression((AExpression) expression, GPEEE.EMPTY_ENVIRONMENT));
+    assertEquals(expected, this.evaluator.evaluateExpression((AExpression) expression, getEnv()));
   }
 
   /**
