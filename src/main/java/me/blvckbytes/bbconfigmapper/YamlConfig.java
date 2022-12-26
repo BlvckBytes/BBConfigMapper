@@ -28,6 +28,7 @@ public class YamlConfig implements IConfig {
    */
 
   private static final Yaml YAML;
+  private static final DumperOptions DUMPER_OPTIONS;
 
   private final IExpressionEvaluator evaluator;
   private final ILogger logger;
@@ -40,10 +41,11 @@ public class YamlConfig implements IConfig {
     loaderOptions.setProcessComments(true);
     loaderOptions.setAllowDuplicateKeys(false);
 
-    DumperOptions dumperOptions = new DumperOptions();
-    dumperOptions.setProcessComments(true);
+    DUMPER_OPTIONS = new DumperOptions();
+    DUMPER_OPTIONS.setProcessComments(true);
+    DUMPER_OPTIONS.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 
-    YAML = new Yaml(new Constructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions);
+    YAML = new Yaml(new Constructor(loaderOptions), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, loaderOptions);
   }
 
   public YamlConfig(IExpressionEvaluator evaluator, ILogger logger, String expressionMarkerSuffix) {
@@ -139,7 +141,7 @@ public class YamlConfig implements IConfig {
       logger.logDebug(DebugLogSource.YAML, "Reset the root node");
       //#endif
 
-      rootNode = new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DumperOptions.FlowStyle.AUTO);
+      rootNode = new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
       return;
     }
 
@@ -374,7 +376,7 @@ public class YamlConfig implements IConfig {
         // Try to reuse already present key nodes
         Node tupleKey = keyValueTuple == null ? null : keyValueTuple.getKeyNode();
 
-        keyValueTuple = createNewTuple(tupleKey, pathPart, new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DumperOptions.FlowStyle.AUTO));
+        keyValueTuple = createNewTuple(tupleKey, pathPart, new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DUMPER_OPTIONS.getDefaultFlowStyle()));
         mapping.getValue().add(keyValueTuple);
 
         // Invalidate the (null) cache for this newly added tuple
@@ -505,7 +507,7 @@ public class YamlConfig implements IConfig {
 
     if (value instanceof List) {
       List<Node> values = new ArrayList<>();
-      node = new SequenceNode(Tag.SEQ, true, values, null, null, DumperOptions.FlowStyle.AUTO);
+      node = new SequenceNode(Tag.SEQ, true, values, null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
 
       for (Object item : (List<?>) value)
         values.add(wrapValue(item));
@@ -515,7 +517,7 @@ public class YamlConfig implements IConfig {
 
     if (value instanceof Map) {
       List<NodeTuple> tuples = new ArrayList<>();
-      node = new MappingNode(Tag.MAP, true, tuples, null, null, DumperOptions.FlowStyle.AUTO);
+      node = new MappingNode(Tag.MAP, true, tuples, null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
 
       for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
         Node keyNode = createScalarNode(String.valueOf(entry.getKey()), Tag.STR);
@@ -555,7 +557,7 @@ public class YamlConfig implements IConfig {
       return Long.parseLong(node.getValue());
 
     if (tag == Tag.FLOAT)
-      return Float.parseFloat(node.getValue());
+      return Double.parseDouble(node.getValue());
 
     throw new IllegalStateException("Encountered unknown scalar node type >" + tag + "<");
   }
