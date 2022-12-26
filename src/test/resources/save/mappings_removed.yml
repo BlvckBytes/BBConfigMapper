@@ -1,0 +1,9 @@
+a:
+  b: first
+  c: second
+
+b:
+  c: nested
+
+g:
+  h: nested

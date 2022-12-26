@@ -1,0 +1,23 @@
+a:
+  b: 21
+  x: hello
+  d:
+    y: false
+
+b:
+  c: nested
+  d:
+    e:
+    - 1
+    - 2
+    - 3
+    f:
+      hello: world
+
+g:
+  h: nested
+  i:
+  - this
+  - has
+  - been
+  - overwritten

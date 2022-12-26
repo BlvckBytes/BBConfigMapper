@@ -1,0 +1,20 @@
+a:
+  b: first
+  c: second
+  d: 3
+  new1:
+    hello: world
+
+b:
+  c: nested
+  d:
+    e: mapping
+    f: 1.2
+    new2:
+      hello: world
+
+g:
+  h: nested
+  i:
+  - list
+  - items
