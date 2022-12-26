@@ -83,7 +83,7 @@ public class YamlConfig implements IConfig {
     logger.logDebug(DebugLogSource.YAML, "Serializing the YAML root node to the provided writer");
     //#endif
 
-    if (this.rootNode == null) {
+    if (this.rootNode == null || this.rootNode.getValue().size() == 0) {
       writer.write("");
       return;
     }
@@ -247,7 +247,7 @@ public class YamlConfig implements IConfig {
     }
 
     if (container == null || keyPart.isBlank())
-      throw new IllegalStateException("Invalid path specified: " + keyPath);
+      throw new IllegalArgumentException("Invalid path specified: " + keyPath);
 
     // Check if there's an existing tuple
     NodeTuple existingTuple = locateKey(container, keyPart);
@@ -322,10 +322,7 @@ public class YamlConfig implements IConfig {
    */
   private NodeTuple createNewTuple(@Nullable Node keyNode, @Nullable String key, Node value) {
     if (keyNode == null) {
-
-      if (key == null)
-        throw new IllegalStateException("Cannot omit both the keyNode and the key");
-
+      assert key != null;
       keyNode = new ScalarNode(Tag.STR, key, null, null, DumperOptions.ScalarStyle.PLAIN);
     }
 
@@ -345,6 +342,9 @@ public class YamlConfig implements IConfig {
 
     // Keys should never contain any whitespace
     path = path.trim();
+
+    if (path.isBlank())
+      throw new IllegalArgumentException("Invalid path specified: " + path);
 
     Node node = rootNode;
     boolean markedForExpressions = false;

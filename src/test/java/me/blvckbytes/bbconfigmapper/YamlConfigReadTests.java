@@ -2,6 +2,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
 
@@ -67,7 +68,45 @@ public class YamlConfigReadTests {
   public void shouldReadComments() throws FileNotFoundException {
     YamlConfig config = helper.makeConfig("comments.yml");
     assertLinesMatch(List.of(" Comment above a", " test 1"), config.readComment("a", true));
-    assertLinesMatch(List.of(" Comment above b", " test 2"), config.readComment("a.b", true));
+    assertLinesMatch(List.of(" Comment above b", " test 2", "\n"), config.readComment("a.b", true));
     assertLinesMatch(List.of(" Comment above value", " test 3"), config.readComment("a.b", false));
+  }
+
+  @Test
+  public void shouldReadNullCommentListOnNonExistingPath() throws FileNotFoundException {
+    YamlConfig config = helper.makeConfig("comments.yml");
+    assertNull(config.readComment("invalid", true));
+    assertNull(config.readComment("invalid.invalid", false));
+  }
+
+  @Test
+  public void shouldReadEmptyCommentListOnNonCommentedKey() throws FileNotFoundException {
+    YamlConfig config = helper.makeConfig("comments.yml");
+    assertLinesMatch(List.of(), config.readComment("a.c", true));
+    assertLinesMatch(List.of(), config.readComment("a.c", false));
+  }
+
+  @Test
+  public void shouldThrowOnMultiDocumentInput() {
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("multi_node.yml"), "Encountered multiple nodes");
+  }
+
+  @Test
+  public void shouldThrowOnEmptyDocumentInput() {
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("empty.yml"), "No node available");
+  }
+
+  @Test
+  public void shouldThrowOnNonMappingRoot() {
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("top_level_list.yml"), "The top level of a config has to be a map.");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("top_level_scalar.yml"), "The top level of a config has to be a map.");
+  }
+
+  @Test
+  public void shouldThrowOnMalformedPaths() throws FileNotFoundException {
+    YamlConfig config = helper.makeConfig("comments.yml");
+    helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> config.set("a.", 2), "Invalid path specified: a.");
+    helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> config.set("a. ", 2), "Invalid path specified: a. ");
+    helper.assertThrowsWithMsg(IllegalArgumentException.class, () -> config.set(" .b", 2), "Invalid path specified: ");
   }
 }

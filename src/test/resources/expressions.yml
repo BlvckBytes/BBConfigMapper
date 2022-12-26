@@ -8,5 +8,5 @@ d:
     g: '"hello " & "world"'
   # Expression markers should propagate downwards
   h$:
-    i: 20 * 3
+    i$: 20 * 3
     j: '"hello " & "world"'

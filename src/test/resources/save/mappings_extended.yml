@@ -18,3 +18,8 @@ g:
   i:
   - list
   - items
+
+x:
+  y:
+    z:
+      last: 20

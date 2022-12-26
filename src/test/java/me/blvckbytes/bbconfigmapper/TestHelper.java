@@ -5,6 +5,8 @@ import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.logging.ILogger;
 import me.blvckbytes.gpeee.logging.NullLogger;
 import me.blvckbytes.gpeee.parser.expression.AExpression;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.function.Executable;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -31,12 +33,15 @@ public class TestHelper {
 
   /**
    * Create a new config instance and load it's contents from a yaml file
-   * @param fileName Input file within the resources folder
+   * @param fileName Input file within the resources folder, null to not load at all
    * @return Loaded yaml configuration instance
    */
-  public YamlConfig makeConfig(String fileName) throws FileNotFoundException {
+  public YamlConfig makeConfig(@Nullable String fileName) throws FileNotFoundException {
     YamlConfig config = new YamlConfig(this.evaluator, this.logger, this.expressionMarkerSuffix);
-    config.load(new FileReader("src/test/resources/" + fileName));
+
+    if (fileName != null)
+      config.load(new FileReader("src/test/resources/" + fileName));
+
     return config;
   }
 
@@ -120,5 +125,16 @@ public class TestHelper {
       result.put(values[i], values[i + 1]);
 
     return result;
+  }
+
+  /**
+   * Asserts that an executable throws an exception of a certain type with a specific message
+   * @param expectedType Expected exception type
+   * @param executable Executable to run
+   * @param expectedMessage Expected exception message
+   */
+  public <T extends Throwable> void assertThrowsWithMsg(Class<T> expectedType, Executable executable, String expectedMessage) {
+    T exception = assertThrows(expectedType, executable);
+    assertEquals(exception.getMessage(), expectedMessage);
   }
 }

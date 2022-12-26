@@ -21,3 +21,8 @@ g:
   - has
   - been
   - overwritten
+
+x:
+  y:
+    z:
+      last: 20
