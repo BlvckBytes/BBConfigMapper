@@ -4,6 +4,7 @@ import me.blvckbytes.bbconfigmapper.sections.*;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ConfigMapperTests {
 
@@ -54,6 +55,17 @@ public class ConfigMapperTests {
     assertEquals("damage", section.getMainEffect().getEffect());
     assertEquals("120", section.getMainEffect().getDuration());
     assertEquals("2", section.getMainEffect().getAmplifier());
+  }
+
+  @Test
+  public void shouldMapNestedSectionToNullIfNotAMapping() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_simple_section_no_mapping.yml");
+    PotionSimpleSection section = mapper.mapSection(null, PotionSimpleSection.class);
+
+    assertEquals("throwable", section.getType());
+    assertNull(section.getMainEffect().getEffect());
+    assertNull(section.getMainEffect().getDuration());
+    assertNull(section.getMainEffect().getAmplifier());
   }
 
   @Test
@@ -114,5 +126,58 @@ public class ConfigMapperTests {
     assertEquals("config_mapper", section.getDatabase());
     assertEquals("root", section.getUsername());
     assertEquals("abc123", section.getPassword());
+  }
+
+  @Test
+  public void shouldMapSectionAndLeaveNonDefaultNonExistingAsNull() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("database_section_partial2.yml");
+    DatabaseSectionStrings section = mapper.mapSection("connection", DatabaseSectionStrings.class);
+
+    assertEquals("host_default", section.getHost());
+    assertEquals("port_default", section.getPort());
+    assertNull(section.getDatabase());
+    assertEquals("root", section.getUsername());
+    assertEquals("abc123", section.getPassword());
+  }
+
+  @Test
+  public void shouldThrowOnRuntimeDecideReturningNull() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("quest_invalid.yml");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, QuestSection.class), "Unsupported type specified: class java.lang.Object");
+  }
+
+  @Test
+  public void shouldThrowWhenSectionSelfReferences() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("quest_invalid.yml");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, SelfRefSection.class), "Sections cannot use self-referencing fields");
+  }
+
+  @Test
+  public void shouldThrowWhenListIsNotAnnotated() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("sequences.yml");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection("b", NonAnnotatedListSection.class), "List fields need to be annotated by @CSList");
+  }
+
+  @Test
+  public void shouldThrowWhenMapIsNotAnnotated() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("mappings.yml");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection("b", NonAnnotatedMapSection.class), "Map fields need to be annotated by @CSMap");
+  }
+
+  @Test
+  public void shouldThrowWhenNoDefaultConstructorAvailable() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("mappings.yml");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, NoDefaultConstructorSection.class), "Please specify an empty default constructor");
+  }
+
+  @Test
+  public void shouldIgnoreAnnotatedAndStaticFields() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("ignore_section.yml");
+    IgnoreSection section = mapper.mapSection(null, IgnoreSection.class);
+
+    assertNull(section.getIgnored1());
+    assertEquals("missing CSIgnore annotation", section.getIgnored2());
+    assertNull(section.getIgnored3());
+    assertNull(IgnoreSection.getIgnored4());
   }
 }
