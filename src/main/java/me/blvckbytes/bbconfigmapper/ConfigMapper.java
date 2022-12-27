@@ -90,10 +90,6 @@ public class ConfigMapper implements IConfigMapper {
       if (value == null)
         continue;
 
-      // Try to convert the value when the field type mismatches
-      if (!fieldType.isAssignableFrom(value.getClass()))
-        value = convertType(value, fieldType);
-
       f.set(instance, value);
     }
 
