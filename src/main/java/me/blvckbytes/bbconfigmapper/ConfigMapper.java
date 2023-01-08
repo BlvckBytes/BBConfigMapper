@@ -205,19 +205,47 @@ public class ConfigMapper implements IConfigMapper {
    * @param type Type to convert to
    */
   private @Nullable Object convertType(@Nullable Object input, Class<?> type) throws Exception {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Trying to convert a value to type: " + type);
+    //#endif
+
+    if (input == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Is null, returning null");
+      //#endif
+      return null;
+    }
+
     if (type == String.class) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Stringifying value");
+      //#endif
+
       if (input instanceof String)
         return input;
 
       return String.valueOf(input);
     }
 
-    if (type == IEvaluable.class)
+    if (type == IEvaluable.class) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
+      //#endif
       return new ConfigValue(input, this.evaluator);
+    }
 
     if (IConfigSection.class.isAssignableFrom(type)) {
-      if (!(input instanceof Map))
-        return null;
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Parsing value as config-section");
+      //#endif
+
+      if (!(input instanceof Map)) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Value was null, falling back on empty section");
+        //#endif
+        input = new HashMap<>();
+      }
+
       return mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(IConfigSection.class));
     }
 
@@ -350,13 +378,6 @@ public class ConfigMapper implements IConfigMapper {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolved value=" + value);
     //#endif
-
-    if (value == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Value is null, returning null");
-      //#endif
-      return null;
-    }
 
     if (Map.class.isAssignableFrom(type))
       return handleResolveMapField(f, value);

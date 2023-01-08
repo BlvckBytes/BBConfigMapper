@@ -3,8 +3,7 @@ package me.blvckbytes.bbconfigmapper;
 import me.blvckbytes.bbconfigmapper.sections.*;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigMapperTests {
 
@@ -58,8 +57,19 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldMapNestedSectionToNullIfNotAMapping() throws Exception {
+  public void shouldMapNestedSectionValuesToNullIfNotAMapping() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_simple_section_no_mapping.yml");
+    PotionSimpleSection section = mapper.mapSection(null, PotionSimpleSection.class);
+
+    assertEquals("throwable", section.getType());
+    assertNull(section.getMainEffect().getEffect());
+    assertNull(section.getMainEffect().getDuration());
+    assertNull(section.getMainEffect().getAmplifier());
+  }
+
+  @Test
+  public void shouldMapNestedSectionValuesToNullIfAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_simple_section_absent.yml");
     PotionSimpleSection section = mapper.mapSection(null, PotionSimpleSection.class);
 
     assertEquals("throwable", section.getType());
@@ -81,6 +91,24 @@ public class ConfigMapperTests {
   }
 
   @Test
+  public void shouldMapSectionWithMapToEmptyIfYamlTypeMismatches() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("ui_layout_section_malformed.yml");
+    UiLayoutSection section = mapper.mapSection(null, UiLayoutSection.class);
+
+    assertNotNull(section.getLayout());
+    assertEquals(0, section.getLayout().size());
+  }
+
+  @Test
+  public void shouldMapSectionWithMapToEmptyIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("ui_layout_section_absent.yml");
+    UiLayoutSection section = mapper.mapSection(null, UiLayoutSection.class);
+
+    assertNotNull(section.getLayout());
+    assertEquals(0, section.getLayout().size());
+  }
+
+  @Test
   public void shouldMapSectionWithList() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_list_section.yml");
     PotionListSection section = mapper.mapSection(null, PotionListSection.class);
@@ -98,6 +126,24 @@ public class ConfigMapperTests {
   }
 
   @Test
+  public void shouldMapSectionWithListToEmptyIfYamlTypeMismatches() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_malformed.yml");
+    PotionListSection section = mapper.mapSection(null, PotionListSection.class);
+
+    assertNotNull(section.getEffects());
+    assertEquals(0, section.getEffects().size());
+  }
+
+  @Test
+  public void shouldMapSectionWithListToEmptyIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
+    PotionListSection section = mapper.mapSection(null, PotionListSection.class);
+
+    assertNotNull(section.getEffects());
+    assertEquals(0, section.getEffects().size());
+  }
+
+  @Test
   public void shouldMapSectionWithArray() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_list_section.yml");
     PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
@@ -112,6 +158,24 @@ public class ConfigMapperTests {
     assertEquals("regeneration", section.getEffects()[2].getEffect());
     assertEquals("10", section.getEffects()[2].getDuration());
     assertEquals("3", section.getEffects()[2].getAmplifier());
+  }
+
+  @Test
+  public void shouldMapSectionWithArrayToEmptyIfYamlTypeMismatches() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_malformed.yml");
+    PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
+
+    assertNotNull(section.getEffects());
+    assertEquals(0, section.getEffects().length);
+  }
+
+  @Test
+  public void shouldMapSectionWithArrayToEmptyIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
+    PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
+
+    assertNotNull(section.getEffects());
+    assertEquals(0, section.getEffects().length);
   }
 
   @Test
