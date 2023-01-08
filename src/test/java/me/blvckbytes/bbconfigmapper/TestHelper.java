@@ -58,8 +58,19 @@ public class TestHelper {
    * @return Mapper instance, operating on the configuration instance
    */
   public IConfigMapper makeMapper(String fileName) throws FileNotFoundException {
+    return makeMapper(fileName, null);
+  }
+
+  /**
+   * Create a new config instance on the provided path and then create a
+   * new mapper instance on top of that configuration instance
+   * @param fileName Input file within the resources folder
+   * @param converterRegistry Optional registry of custom value converters
+   * @return Mapper instance, operating on the configuration instance
+   */
+  public IConfigMapper makeMapper(String fileName, IValueConverterRegistry converterRegistry) throws FileNotFoundException {
     YamlConfig config = makeConfig(fileName);
-    return new ConfigMapper(config, this.logger, this.evaluator);
+    return new ConfigMapper(config, this.logger, this.evaluator, converterRegistry);
   }
 
   /**

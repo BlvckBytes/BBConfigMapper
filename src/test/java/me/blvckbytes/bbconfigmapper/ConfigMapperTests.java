@@ -1,6 +1,7 @@
 package me.blvckbytes.bbconfigmapper;
 
 import me.blvckbytes.bbconfigmapper.sections.*;
+import me.blvckbytes.gpeee.GPEEE;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -269,5 +270,29 @@ public class ConfigMapperTests {
     assertEquals("missing CSIgnore annotation", section.getIgnored2());
     assertNull(section.getIgnored3());
     assertNull(IgnoreSection.getIgnored4());
+  }
+
+  @Test
+  public void shouldMapValuesUsingTheCustomValueConverter() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("custom_enum_section.yml", this::getConverterFor);
+    CustomEnumSection section = mapper.mapSection(null, CustomEnumSection.class);
+
+    assertEquals(ECustomEnum.HELLO, section.getCustomEnumA());
+    assertEquals(ECustomEnum.WORLD, section.getCustomEnumB());
+    assertEquals(ECustomEnum.ENUM, section.getCustomEnumC());
+    assertNull(section.getCustomEnumInvalid());
+  }
+
+  private FValueConverter getConverterFor(Class<?> type) {
+    if (type == ECustomEnum.class) {
+      return value -> {
+        try {
+          return ECustomEnum.valueOf(value.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
+        } catch (Exception ignored) {}
+        return null;
+      };
+    }
+
+    return null;
   }
 }

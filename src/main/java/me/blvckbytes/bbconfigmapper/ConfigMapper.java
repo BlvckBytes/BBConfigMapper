@@ -15,22 +15,28 @@ import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
 
-  // TODO: Register external field type parsers
-
   private final IConfig config;
   private final ILogger logger;
   private final IExpressionEvaluator evaluator;
+  private final @Nullable IValueConverterRegistry converterRegistry;
 
   /**
    * Create a new config reader on a {@link IConfig}
    * @param config Configuration to read from
    * @param logger Logger to use for logging events
    * @param evaluator Expression evaluator instance to use when parsing expressions
+   * @param converterRegistry Optional registry of custom value converters
    */
-  public ConfigMapper(IConfig config, ILogger logger, IExpressionEvaluator evaluator) {
+  public ConfigMapper(
+    IConfig config,
+    ILogger logger,
+    IExpressionEvaluator evaluator,
+    @Nullable IValueConverterRegistry converterRegistry
+  ) {
     this.config = config;
     this.logger = logger;
     this.evaluator = evaluator;
+    this.converterRegistry = converterRegistry;
   }
 
   @Override
@@ -229,13 +235,6 @@ public class ConfigMapper implements IConfigMapper {
       return String.valueOf(input);
     }
 
-    if (type == IEvaluable.class) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
-      //#endif
-      return new ConfigValue(input, this.evaluator);
-    }
-
     if (IConfigSection.class.isAssignableFrom(type)) {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Parsing value as config-section");
@@ -249,6 +248,28 @@ public class ConfigMapper implements IConfigMapper {
       }
 
       return mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(IConfigSection.class));
+    }
+
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
+    //#endif
+
+    IEvaluable evaluable = new ConfigValue(input, this.evaluator);
+
+    if (type == IEvaluable.class) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Returning evaluable");
+      //#endif
+      return evaluable;
+    }
+
+    // Look through the converter registry to find a custom converter for this type
+    FValueConverter converter;
+    if (converterRegistry != null && (converter = converterRegistry.getConverterFor(type)) != null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Applying custom converter for type=" + type);
+      //#endif
+      return converter.apply(evaluable);
     }
 
     throw new IllegalStateException("Unsupported type specified: " + type);
