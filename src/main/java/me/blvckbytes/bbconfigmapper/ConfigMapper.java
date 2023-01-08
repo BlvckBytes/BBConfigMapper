@@ -15,6 +15,9 @@ import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
 
+  // TODO: @CSAlways means never null, nullable otherwise
+  // TODO: Register external field type parsers
+
   private final IConfig config;
   private final ILogger logger;
   private final IExpressionEvaluator evaluator;

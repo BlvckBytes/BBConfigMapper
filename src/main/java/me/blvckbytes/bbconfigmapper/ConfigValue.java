@@ -5,10 +5,7 @@ import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
 import me.blvckbytes.gpeee.parser.expression.AExpression;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigValue implements IEvaluable {
 
@@ -34,6 +31,12 @@ public class ConfigValue implements IEvaluable {
   @SuppressWarnings("unchecked")
   public <T> List<T> asList(ScalarType type, IEvaluationEnvironment env) {
     return (List<T>) interpretOrReadCache(value, List.class, new ScalarType[] { type }, env);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> Set<T> asSet(ScalarType type, IEvaluationEnvironment env) {
+    return (Set<T>) interpretOrReadCache(value, Set.class, new ScalarType[] { type }, env);
   }
 
   @Override
@@ -113,7 +116,7 @@ public class ConfigValue implements IEvaluable {
     if (type.isInstance(cachedValue) && doGenericTypesEqual(cachedGenericTypes, genericTypes))
       return (T) cachedValue;
 
-    if (type == List.class) {
+    if (type == List.class || type == Set.class) {
 
       if (genericTypes == null || genericTypes.length < 1 || genericTypes[0] == null)
         throw new IllegalStateException("Cannot require a List without specifying a generic type");
@@ -128,7 +131,12 @@ public class ConfigValue implements IEvaluable {
       }
 
       List<?> items = (List<?>) input;
-      List<Object> results = new ArrayList<>();
+      Collection<Object> results;
+
+      if (type == List.class)
+        results = new ArrayList<>();
+      else
+        results = new HashSet<>();
 
       // Interpret each item as the requested generic type
       for (Object item : items)
