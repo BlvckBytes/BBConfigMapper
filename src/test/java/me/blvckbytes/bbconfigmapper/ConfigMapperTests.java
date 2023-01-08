@@ -68,14 +68,23 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldMapNestedSectionValuesToNullIfAbsent() throws Exception {
+  public void shouldMapNestedSectionAlwaysValuesToNullIfAbsent() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_simple_section_absent.yml");
-    PotionSimpleSection section = mapper.mapSection(null, PotionSimpleSection.class);
+    PotionSimpleSectionAlways section = mapper.mapSection(null, PotionSimpleSectionAlways.class);
 
     assertEquals("throwable", section.getType());
     assertNull(section.getMainEffect().getEffect());
     assertNull(section.getMainEffect().getDuration());
     assertNull(section.getMainEffect().getAmplifier());
+  }
+
+  @Test
+  public void shouldMapNestedSectionToNullIfAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_simple_section_absent.yml");
+    PotionSimpleSection section = mapper.mapSection(null, PotionSimpleSection.class);
+
+    assertEquals("throwable", section.getType());
+    assertNull(section.getMainEffect());
   }
 
   @Test

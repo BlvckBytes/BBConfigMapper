@@ -15,7 +15,6 @@ import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
 
-  // TODO: @CSAlways means never null, nullable otherwise
   // TODO: Register external field type parsers
 
   private final IConfig config;
@@ -360,6 +359,7 @@ public class ConfigMapper implements IConfigMapper {
    */
   private @Nullable Object resolveFieldValue(@Nullable String root, @Nullable Map<?, ?> source, Field f, Class<?> type) throws Exception {
     String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, f.getName());
+    boolean always = f.isAnnotationPresent(CSAlways.class) || f.getDeclaringClass().isAnnotationPresent(CSAlways.class);
 
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
@@ -369,6 +369,15 @@ public class ConfigMapper implements IConfigMapper {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Type is of another section");
       //#endif
+
+      // It's not marked as always and the current path doesn't exist: return null
+      if (!always && resolvePath(path, source) == null) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Returning null for absent section");
+        //#endif
+        return null;
+      }
+
       return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
     }
 
