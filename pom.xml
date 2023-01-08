@@ -72,20 +72,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- XSeries compatibility enums -->
-        <dependency>
-            <groupId>com.github.cryptomorin</groupId>
-            <artifactId>XSeries</artifactId>
-            <version>9.2.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.19.3-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- The latest SnakeYAML parser to allow for proper comment handling -->
         <dependency>
             <groupId>org.yaml</groupId>
