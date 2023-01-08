@@ -1,12 +1,13 @@
 package me.blvckbytes.bbconfigmapper;
 
+import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
-import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.Tuple;
 import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -229,7 +230,7 @@ public class ConfigMapper implements IConfigMapper {
    * @param value Previously looked up value
    * @return Value to assign to the field
    */
-  private @Nullable Object handleResolveMapField(Field f, Object value) throws Exception {
+  private Object handleResolveMapField(Field f, Object value) throws Exception {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolving map field");
     //#endif
@@ -239,18 +240,19 @@ public class ConfigMapper implements IConfigMapper {
     if (mapMeta == null)
       throw new IllegalStateException("Map fields need to be annotated by @CSMap");
 
+    Map<Object, Object> result = new HashMap<>();
+
     if (!(value instanceof Map)) {
       //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Not a map, returning null");
+      logger.logDebug(DebugLogSource.MAPPER, "Not a map, returning empty map");
       //#endif
-      return null;
+      return result;
     }
 
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Mapping values individually");
     //#endif
 
-    Map<Object, Object> result = new HashMap<>();
     for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
       result.put(convertType(entry.getKey(), mapMeta.k()), convertType(entry.getValue(), mapMeta.v()));
 
@@ -263,7 +265,7 @@ public class ConfigMapper implements IConfigMapper {
    * @param value Previously looked up value
    * @return Value to assign to the field
    */
-  private @Nullable Object handleResolveListField(Field f, Object value) throws Exception {
+  private Object handleResolveListField(Field f, Object value) throws Exception {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolving list field");
     //#endif
@@ -272,24 +274,49 @@ public class ConfigMapper implements IConfigMapper {
     if (listMeta == null)
       throw new IllegalStateException("List fields need to be annotated by @CSList");
 
-    if (!(value instanceof List)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning null");
-      //#endif
-      return null;
-    }
-
     List<Object> result = new ArrayList<>();
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Mapping items individually");
-    //#endif
+    if (!(value instanceof List)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning empty list");
+      //#endif
+      return result;
+    }
 
     List<?> list = (List<?>) value;
     for (Object o : list)
       result.add(convertType(o, listMeta.type()));
 
     return result;
+  }
+
+  /**
+   * Handles resolving a field of type array based on a previously looked up value
+   * @param f List field which has to be assigned to
+   * @param value Previously looked up value
+   * @return Value to assign to the field
+   */
+  private Object handleResolveArrayField(Field f, Object value) throws Exception {
+    //#if mvn.project.property.production != "true"
+    logger.logDebug(DebugLogSource.MAPPER, "Resolving array field");
+    //#endif
+
+    Class<?> arrayType = f.getType().getComponentType();
+
+    if (!(value instanceof List)) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning empty array");
+      //#endif
+      return Array.newInstance(arrayType, 0);
+    }
+
+    List<?> list = (List<?>) value;
+    Object array = Array.newInstance(arrayType, list.size());
+
+    for (int i = 0; i < list.size(); i++)
+      Array.set(array, i, convertType(list.get(i), arrayType));
+
+    return array;
   }
 
   /**
@@ -336,6 +363,9 @@ public class ConfigMapper implements IConfigMapper {
 
     if (List.class.isAssignableFrom(type))
       return handleResolveListField(f, value);
+
+    if (type.isArray())
+      return handleResolveArrayField(f, value);
 
     return convertType(value, type);
   }

@@ -98,6 +98,23 @@ public class ConfigMapperTests {
   }
 
   @Test
+  public void shouldMapSectionWithArray() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section.yml");
+    PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
+
+    assertEquals("throwable", section.getType());
+    assertEquals("damage", section.getEffects()[0].getEffect());
+    assertEquals("120", section.getEffects()[0].getDuration());
+    assertEquals("2", section.getEffects()[0].getAmplifier());
+    assertEquals("healing", section.getEffects()[1].getEffect());
+    assertEquals("0", section.getEffects()[1].getDuration());
+    assertEquals("1", section.getEffects()[1].getAmplifier());
+    assertEquals("regeneration", section.getEffects()[2].getEffect());
+    assertEquals("10", section.getEffects()[2].getDuration());
+    assertEquals("3", section.getEffects()[2].getAmplifier());
+  }
+
+  @Test
   public void shouldMapSectionWithRuntimeDecide() throws Exception {
     IConfigMapper mapper = helper.makeMapper("quest_block_break.yml");
     QuestSection section = mapper.mapSection(null, QuestSection.class);
