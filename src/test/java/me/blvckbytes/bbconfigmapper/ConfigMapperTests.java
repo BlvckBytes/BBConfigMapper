@@ -285,9 +285,10 @@ public class ConfigMapperTests {
 
   private FValueConverter getConverterFor(Class<?> type) {
     if (type == ECustomEnum.class) {
-      return value -> {
+      return (value, evaluator) -> {
         try {
-          return ECustomEnum.valueOf(value.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
+          ConfigValue cv = new ConfigValue(value, evaluator);
+          return ECustomEnum.valueOf(cv.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
         } catch (Exception ignored) {}
         return null;
       };

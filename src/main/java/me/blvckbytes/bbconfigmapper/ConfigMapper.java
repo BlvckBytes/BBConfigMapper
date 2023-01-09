@@ -244,6 +244,15 @@ public class ConfigMapper implements IConfigMapper {
     logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
     //#endif
 
+    // Look through the converter registry to find a custom converter for this type
+    FValueConverter converter;
+    if (converterRegistry != null && (converter = converterRegistry.getConverterFor(type)) != null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Applying custom converter for type=" + type);
+      //#endif
+      return converter.apply(input, this.evaluator);
+    }
+
     IEvaluable evaluable = new ConfigValue(input, this.evaluator);
 
     if (type == IEvaluable.class) {
@@ -270,15 +279,6 @@ public class ConfigMapper implements IConfigMapper {
 
     if (type == boolean.class || type == Boolean.class)
       return evaluable.<Boolean>asScalar(ScalarType.BOOLEAN, GPEEE.EMPTY_ENVIRONMENT);
-
-    // Look through the converter registry to find a custom converter for this type
-    FValueConverter converter;
-    if (converterRegistry != null && (converter = converterRegistry.getConverterFor(type)) != null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Applying custom converter for type=" + type);
-      //#endif
-      return converter.apply(evaluable);
-    }
 
     throw new IllegalStateException("Unsupported type specified: " + type);
   }

@@ -9,7 +9,7 @@ import java.util.*;
 
 public class ConfigValue implements IEvaluable {
 
-  private final @Nullable Object value;
+  protected final @Nullable Object value;
   private final IExpressionEvaluator evaluator;
 
   public ConfigValue(@Nullable Object value, IExpressionEvaluator evaluator) {
@@ -51,7 +51,7 @@ public class ConfigValue implements IEvaluable {
    * @return Guaranteed non-Null value of the requested type
    */
   @SuppressWarnings("unchecked")
-  private<T> T interpretScalar(@Nullable Object input, ScalarType type, IEvaluationEnvironment env) {
+  protected <T> T interpretScalar(@Nullable Object input, ScalarType type, IEvaluationEnvironment env) {
     Class<?> typeClass = type.getType();
 
     if (typeClass.isInstance(input))
@@ -96,8 +96,27 @@ public class ConfigValue implements IEvaluable {
         results = new HashSet<>();
 
       // Interpret each item as the requested generic type
-      for (Object item : items)
+      for (Object item : items) {
+
+        // FIXME: This seems hella repetitive to #interpretScalar
+
+        // Expression result collections are flattened into the return result collection, if applicable
+        if (item instanceof AExpression) {
+          Object result = this.evaluator.evaluateExpression((AExpression) item, env);
+
+          if (result instanceof Collection) {
+            for (Object subItem : (Collection<?>) result)
+              results.add(genericTypes[0].getInterpreter().apply(subItem, env));
+
+            continue;
+          }
+
+          results.add(genericTypes[0].getInterpreter().apply(result, env));
+          continue;
+        }
+
         results.add(interpretScalar(item, genericTypes[0], env));
+      }
 
       return (T) results;
     }
