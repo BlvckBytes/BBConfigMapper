@@ -12,8 +12,6 @@ import java.util.Map;
 public class UiLayoutSection implements IConfigSection {
 
   private String uiName;
-
-  @CSMap(k=String.class, v=IEvaluable.class)
   private Map<String, IEvaluable> layout;
 
   @Override

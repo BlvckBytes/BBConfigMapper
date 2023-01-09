@@ -8,10 +8,7 @@ import me.blvckbytes.gpeee.Tuple;
 import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
@@ -294,10 +291,8 @@ public class ConfigMapper implements IConfigMapper {
     logger.logDebug(DebugLogSource.MAPPER, "Resolving map field");
     //#endif
 
-    CSMap mapMeta = f.getAnnotation(CSMap.class);
-
-    if (mapMeta == null)
-      throw new IllegalStateException("Map fields need to be annotated by @CSMap");
+    List<Class<?>> genericTypes = getGenericTypes(f);
+    assert genericTypes != null && genericTypes.size() == 2;
 
     Map<Object, Object> result = new HashMap<>();
 
@@ -313,7 +308,7 @@ public class ConfigMapper implements IConfigMapper {
     //#endif
 
     for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
-      result.put(convertType(entry.getKey(), mapMeta.k()), convertType(entry.getValue(), mapMeta.v()));
+      result.put(convertType(entry.getKey(), genericTypes.get(0)), convertType(entry.getValue(), genericTypes.get(1)));
 
     return result;
   }
@@ -329,9 +324,8 @@ public class ConfigMapper implements IConfigMapper {
     logger.logDebug(DebugLogSource.MAPPER, "Resolving list field");
     //#endif
 
-    CSList listMeta = f.getAnnotation(CSList.class);
-    if (listMeta == null)
-      throw new IllegalStateException("List fields need to be annotated by @CSList");
+    List<Class<?>> genericTypes = getGenericTypes(f);
+    assert genericTypes != null && genericTypes.size() == 1;
 
     List<Object> result = new ArrayList<>();
 
@@ -344,7 +338,7 @@ public class ConfigMapper implements IConfigMapper {
 
     List<?> list = (List<?>) value;
     for (Object o : list)
-      result.add(convertType(o, listMeta.type()));
+      result.add(convertType(o, genericTypes.get(0)));
 
     return result;
   }
@@ -468,5 +462,40 @@ public class ConfigMapper implements IConfigMapper {
     } catch (NoSuchMethodException e) {
       throw new IllegalStateException("Please specify an empty default constructor");
     }
+  }
+
+  /**
+   * Get a list of generic types a field's type declares
+   * @param f Target field
+   * @return List of generic fields, null if the field's type is not generic
+   */
+  private @Nullable List<Class<?>> getGenericTypes(Field f) {
+    Type genericType = f.getGenericType();
+
+    if (!(genericType instanceof ParameterizedType))
+      return null;
+
+    Type[] types = ((ParameterizedType) genericType).getActualTypeArguments();
+    List<Class<?>> result = new ArrayList<>();
+
+    for (Type type : types)
+      result.add(unwrapType(type));
+
+    return result;
+  }
+
+  /**
+   * Attempts to unwrap a given type to it's raw type class
+   * @param type Type to unwrap
+   * @return Unwrapped type
+   */
+  private Class<?> unwrapType(Type type) {
+    if (type instanceof Class)
+      return (Class<?>) type;
+
+    if (type instanceof ParameterizedType)
+      return unwrapType(((ParameterizedType) type).getRawType());
+
+    throw new IllegalStateException("Cannot unwrap type of class=" + type.getClass());
   }
 }

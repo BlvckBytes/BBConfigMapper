@@ -244,18 +244,6 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldThrowWhenListIsNotAnnotated() throws Exception {
-    IConfigMapper mapper = helper.makeMapper("sequences.yml");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection("b", NonAnnotatedListSection.class), "List fields need to be annotated by @CSList");
-  }
-
-  @Test
-  public void shouldThrowWhenMapIsNotAnnotated() throws Exception {
-    IConfigMapper mapper = helper.makeMapper("mappings.yml");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection("b", NonAnnotatedMapSection.class), "Map fields need to be annotated by @CSMap");
-  }
-
-  @Test
   public void shouldThrowWhenNoDefaultConstructorAvailable() throws Exception {
     IConfigMapper mapper = helper.makeMapper("mappings.yml");
     helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, NoDefaultConstructorSection.class), "Please specify an empty default constructor");

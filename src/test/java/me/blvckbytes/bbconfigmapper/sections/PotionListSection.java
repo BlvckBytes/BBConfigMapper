@@ -10,8 +10,6 @@ import java.util.List;
 public class PotionListSection implements IConfigSection {
 
   private String type;
-
-  @CSList(type=PotionEffectSection.class)
   private List<PotionEffectSection> effects;
 
   @Override
