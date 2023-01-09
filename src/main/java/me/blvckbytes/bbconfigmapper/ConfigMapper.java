@@ -388,19 +388,18 @@ public class ConfigMapper implements IConfigMapper {
     logger.logDebug(DebugLogSource.MAPPER, "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
     //#endif
 
+    // It's not marked as always and the current path doesn't exist: return null
+    if (!always && resolvePath(path, source) == null) {
+      //#if mvn.project.property.production != "true"
+      logger.logDebug(DebugLogSource.MAPPER, "Returning null for absent path");
+      //#endif
+      return null;
+    }
+
     if (IConfigSection.class.isAssignableFrom(type)) {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Type is of another section");
       //#endif
-
-      // It's not marked as always and the current path doesn't exist: return null
-      if (!always && resolvePath(path, source) == null) {
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Returning null for absent section");
-        //#endif
-        return null;
-      }
-
       return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
     }
 

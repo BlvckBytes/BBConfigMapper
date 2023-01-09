@@ -110,12 +110,20 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldMapSectionWithMapToEmptyIfKeyIsAbsent() throws Exception {
+  public void shouldMapAlwaysSectionWithMapToEmptyIfKeyIsAbsent() throws Exception {
     IConfigMapper mapper = helper.makeMapper("ui_layout_section_absent.yml");
-    UiLayoutSection section = mapper.mapSection(null, UiLayoutSection.class);
+    UiLayoutSectionAlways section = mapper.mapSection(null, UiLayoutSectionAlways.class);
 
     assertNotNull(section.getLayout());
     assertEquals(0, section.getLayout().size());
+  }
+
+  @Test
+  public void shouldMapSectionWithMapToNullIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("ui_layout_section_absent.yml");
+    UiLayoutSection section = mapper.mapSection(null, UiLayoutSection.class);
+
+    assertNull(section.getLayout());
   }
 
   @Test
@@ -145,12 +153,20 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldMapSectionWithListToEmptyIfKeyIsAbsent() throws Exception {
+  public void shouldMapAlwaysSectionWithListToEmptyIfKeyIsAbsent() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
-    PotionListSection section = mapper.mapSection(null, PotionListSection.class);
+    PotionListSectionAlways section = mapper.mapSection(null, PotionListSectionAlways.class);
 
     assertNotNull(section.getEffects());
     assertEquals(0, section.getEffects().size());
+  }
+
+  @Test
+  public void shouldMapSectionWithListToNullIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
+    PotionListSection section = mapper.mapSection(null, PotionListSection.class);
+
+    assertNull(section.getEffects());
   }
 
   @Test
@@ -180,12 +196,20 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldMapSectionWithArrayToEmptyIfKeyIsAbsent() throws Exception {
+  public void shouldMapAlwaysSectionWithArrayToEmptyIfKeyIsAbsent() throws Exception {
     IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
-    PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
+    PotionArraySectionAlways section = mapper.mapSection(null, PotionArraySectionAlways.class);
 
     assertNotNull(section.getEffects());
     assertEquals(0, section.getEffects().length);
+  }
+
+  @Test
+  public void shouldMapSectionWithArrayToNullIfKeyIsAbsent() throws Exception {
+    IConfigMapper mapper = helper.makeMapper("potion_list_section_absent.yml");
+    PotionArraySection section = mapper.mapSection(null, PotionArraySection.class);
+
+    assertNull(section.getEffects());
   }
 
   @Test
