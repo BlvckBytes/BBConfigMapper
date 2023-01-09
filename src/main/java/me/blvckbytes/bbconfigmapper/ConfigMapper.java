@@ -2,6 +2,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.bbconfigmapper.sections.*;
+import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
 import me.blvckbytes.gpeee.logging.ILogger;
@@ -224,17 +225,6 @@ public class ConfigMapper implements IConfigMapper {
       return null;
     }
 
-    if (type == String.class) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Stringifying value");
-      //#endif
-
-      if (input instanceof String)
-        return input;
-
-      return String.valueOf(input);
-    }
-
     if (IConfigSection.class.isAssignableFrom(type)) {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Parsing value as config-section");
@@ -262,6 +252,24 @@ public class ConfigMapper implements IConfigMapper {
       //#endif
       return evaluable;
     }
+
+    if (type == String.class)
+      return evaluable.<String>asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT);
+
+    if (type == int.class || type == Integer.class)
+      return evaluable.<Long>asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT).intValue();
+
+    if (type == long.class || type == Long.class)
+      return evaluable.<Long>asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT);
+
+    if (type == double.class || type == Double.class)
+      return evaluable.<Double>asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT);
+
+    if (type == float.class || type == Float.class)
+      return evaluable.<Double>asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT).floatValue();
+
+    if (type == boolean.class || type == Boolean.class)
+      return evaluable.<Boolean>asScalar(ScalarType.BOOLEAN, GPEEE.EMPTY_ENVIRONMENT);
 
     // Look through the converter registry to find a custom converter for this type
     FValueConverter converter;
