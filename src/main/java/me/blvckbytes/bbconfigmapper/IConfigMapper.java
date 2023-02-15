@@ -39,4 +39,9 @@ public interface IConfigMapper {
    */
   <T extends IConfigSection> T mapSection(@Nullable String root, Class<T> type) throws Exception;
 
+  /**
+   * Get the underlying configuration instance
+   */
+  IConfig getConfig();
+
 }
