@@ -34,9 +34,9 @@ import java.util.*;
 public class ConfigValue implements IEvaluable {
 
   protected final @Nullable Object value;
-  private final IExpressionEvaluator evaluator;
+  private final @Nullable IExpressionEvaluator evaluator;
 
-  public ConfigValue(@Nullable Object value, IExpressionEvaluator evaluator) {
+  public ConfigValue(@Nullable Object value, @Nullable IExpressionEvaluator evaluator) {
     this.value = value;
     this.evaluator = evaluator;
   }
@@ -82,7 +82,7 @@ public class ConfigValue implements IEvaluable {
       return (T) input;
 
     // The input is an expression which needs to be evaluated first
-    if (input instanceof AExpression)
+    if (input instanceof AExpression && this.evaluator != null)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
 
     return (T) type.getInterpreter().apply(input, env);
@@ -125,7 +125,7 @@ public class ConfigValue implements IEvaluable {
         // FIXME: This seems hella repetitive to #interpretScalar
 
         // Expression result collections are flattened into the return result collection, if applicable
-        if (item instanceof AExpression) {
+        if (item instanceof AExpression && this.evaluator != null) {
           Object result = this.evaluator.evaluateExpression((AExpression) item, env);
 
           if (result instanceof Collection) {
