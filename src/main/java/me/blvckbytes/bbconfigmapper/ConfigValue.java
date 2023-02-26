@@ -60,6 +60,13 @@ public class ConfigValue implements IEvaluable {
   }
 
   @Override
+  public Object asRawObject(IEvaluationEnvironment env) {
+    if (value instanceof AExpression && this.evaluator != null)
+      return this.evaluator.evaluateExpression((AExpression) value, env);
+    return value;
+  }
+
+  @Override
   @SuppressWarnings("unchecked")
   public <T, U> Map<T, U> asMap(ScalarType key, ScalarType value, IEvaluationEnvironment env) {
     return (Map<T, U>) interpret(value, Map.class, new ScalarType[] { key, value }, env);

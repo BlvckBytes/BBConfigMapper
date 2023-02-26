@@ -40,4 +40,6 @@ public interface IEvaluable {
 
   <T> Set<T> asSet(ScalarType type, IEvaluationEnvironment env);
 
+  Object asRawObject(IEvaluationEnvironment env);
+
 }
