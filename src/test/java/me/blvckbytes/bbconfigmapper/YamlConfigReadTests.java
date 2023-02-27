@@ -115,11 +115,6 @@ public class YamlConfigReadTests {
   }
 
   @Test
-  public void shouldThrowOnEmptyDocumentInput() {
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("empty.yml"), "No node available");
-  }
-
-  @Test
   public void shouldThrowOnNonMappingRoot() {
     helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("top_level_list.yml"), "The top level of a config has to be a map.");
     helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.makeConfig("top_level_scalar.yml"), "The top level of a config has to be a map.");

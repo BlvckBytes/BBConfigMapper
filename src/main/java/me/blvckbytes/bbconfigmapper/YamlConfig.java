@@ -56,7 +56,7 @@ public class YamlConfig implements IConfig {
 
   private final IExpressionEvaluator evaluator;
   private final ILogger logger;
-  private final String expressionMarkerSuffix;
+  private final @Nullable String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
   private MappingNode rootNode;
 
@@ -72,7 +72,7 @@ public class YamlConfig implements IConfig {
     YAML = new Yaml(new Constructor(loaderOptions), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, loaderOptions);
   }
 
-  public YamlConfig(IExpressionEvaluator evaluator, ILogger logger, String expressionMarkerSuffix) {
+  public YamlConfig(IExpressionEvaluator evaluator, ILogger logger, @Nullable String expressionMarkerSuffix) {
     this.evaluator = evaluator;
     this.logger = logger;
     this.expressionMarkerSuffix = expressionMarkerSuffix;
@@ -82,10 +82,7 @@ public class YamlConfig implements IConfig {
   public void load(Reader reader) {
     Iterator<Node> nodes = YAML.composeAll(reader).iterator();
 
-    if (!nodes.hasNext())
-      throw new IllegalStateException("No node available");
-
-    Node root = nodes.next();
+    Node root = nodes.hasNext() ? nodes.next() : createNewMappingNode(null);
 
     if (nodes.hasNext())
       throw new IllegalStateException("Encountered multiple nodes");
@@ -165,11 +162,17 @@ public class YamlConfig implements IConfig {
       logger.logDebug(DebugLogSource.YAML, "Reset the root node");
       //#endif
 
-      rootNode = new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
+      rootNode = createNewMappingNode(null);
       return;
     }
 
     updatePathValue(path, null, false);
+  }
+
+  private MappingNode createNewMappingNode(@Nullable List<NodeTuple> items) {
+    if (items == null)
+      items = new ArrayList<>();
+    return new MappingNode(Tag.MAP, true, items, null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
   }
 
   @Override
@@ -383,7 +386,7 @@ public class YamlConfig implements IConfig {
 
       MappingNode mapping = (MappingNode) node;
       NodeTuple keyValueTuple = locateKey(mapping, pathPart);
-      boolean markedAlready = pathPart.endsWith(expressionMarkerSuffix);
+      boolean markedAlready = expressionMarkerSuffix != null && pathPart.endsWith(expressionMarkerSuffix);
 
       // The k-v tuple could not be located and isn't marked for expressions already
       // Try to append the expression marker and check for a match again
@@ -402,7 +405,7 @@ public class YamlConfig implements IConfig {
         // Try to reuse already present key nodes
         Node tupleKey = keyValueTuple == null ? null : keyValueTuple.getKeyNode();
 
-        keyValueTuple = createNewTuple(tupleKey, pathPart, new MappingNode(Tag.MAP, true, new ArrayList<>(), null, null, DUMPER_OPTIONS.getDefaultFlowStyle()));
+        keyValueTuple = createNewTuple(tupleKey, pathPart, createNewMappingNode(null));
         mapping.getValue().add(keyValueTuple);
 
         // Invalidate the (null) cache for this newly added tuple
@@ -504,7 +507,7 @@ public class YamlConfig implements IConfig {
           String keyS = (String) key;
 
           // Strip of trailing marker, also mark for expressions (if not marked already)
-          if (keyS.endsWith(expressionMarkerSuffix)) {
+          if (expressionMarkerSuffix != null && keyS.endsWith(expressionMarkerSuffix)) {
             key = keyS.substring(0, keyS.length() - 1);
             isItemMarkedForExpressions = true;
           }
@@ -531,11 +534,11 @@ public class YamlConfig implements IConfig {
     if (node != null)
       return node;
 
-    if (value instanceof List) {
+    if (value instanceof Collection) {
       List<Node> values = new ArrayList<>();
       node = new SequenceNode(Tag.SEQ, true, values, null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
 
-      for (Object item : (List<?>) value)
+      for (Object item : (Collection<?>) value)
         values.add(wrapValue(item));
 
       return node;
@@ -543,7 +546,7 @@ public class YamlConfig implements IConfig {
 
     if (value instanceof Map) {
       List<NodeTuple> tuples = new ArrayList<>();
-      node = new MappingNode(Tag.MAP, true, tuples, null, null, DUMPER_OPTIONS.getDefaultFlowStyle());
+      node = createNewMappingNode(tuples);
 
       for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
         Node keyNode = createScalarNode(String.valueOf(entry.getKey()), Tag.STR);
