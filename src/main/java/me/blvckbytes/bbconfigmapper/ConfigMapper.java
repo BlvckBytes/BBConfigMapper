@@ -105,15 +105,34 @@ public class ConfigMapper implements IConfigMapper {
       if (fieldType == Object.class) {
         Class<?> decidedType = instance.runtimeDecide(fName);
 
-        if (decidedType != null) {
+        if (decidedType == null)
+          throw new IllegalStateException("Requesting plain objects is disallowed");
+
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
+        //#endif
+
+        fieldType = decidedType;
+      }
+
+      FValueConverter converter = null;
+      if (converterRegistry != null) {
+        Class<?> requiredType = converterRegistry.getRequiredTypeFor(fieldType);
+        converter = converterRegistry.getConverterFor(fieldType);
+
+        if (requiredType != null && converter != null) {
           //#if mvn.project.property.production != "true"
-          logger.logDebug(DebugLogSource.MAPPER, "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
+          logger.logDebug(DebugLogSource.MAPPER, "Using custom converter for type=" + fieldType);
           //#endif
-          fieldType = decidedType;
+
+          fieldType = requiredType;
         }
       }
 
       Object value = resolveFieldValue(root, source, f, fieldType);
+
+      if (converter != null)
+        value = converter.apply(value, evaluator);
 
       // Couldn't resolve a non-null value, try to ask for a default value
       if (value == null)
@@ -267,15 +286,6 @@ public class ConfigMapper implements IConfigMapper {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
     //#endif
-
-    // Look through the converter registry to find a custom converter for this type
-    FValueConverter converter;
-    if (converterRegistry != null && (converter = converterRegistry.getConverterFor(type)) != null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Applying custom converter for type=" + type);
-      //#endif
-      return converter.apply(input, this.evaluator);
-    }
 
     IEvaluable evaluable = new ConfigValue(input, this.evaluator);
 
@@ -435,6 +445,10 @@ public class ConfigMapper implements IConfigMapper {
     //#endif
 
     Object value = resolvePath(path, source);
+
+    // Requested plain object
+    if (type == Object.class)
+      return value;
 
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolved value=" + value);

@@ -28,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
 
 public interface IValueConverterRegistry {
 
+  @Nullable Class<?> getRequiredTypeFor(Class<?> type);
+
   @Nullable FValueConverter getConverterFor(Class<?> type);
 
 }

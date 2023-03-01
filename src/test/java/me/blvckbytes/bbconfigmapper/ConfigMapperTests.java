@@ -26,6 +26,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.GPEEE;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -282,7 +283,7 @@ public class ConfigMapperTests {
   @Test
   public void shouldThrowOnRuntimeDecideReturningNull() throws Exception {
     IConfigMapper mapper = helper.makeMapper("quest_invalid.yml");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, QuestSection.class), "Unsupported type specified: class java.lang.Object");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, QuestSection.class), "Requesting plain objects is disallowed");
   }
 
   @Test
@@ -310,7 +311,7 @@ public class ConfigMapperTests {
 
   @Test
   public void shouldMapValuesUsingTheCustomValueConverter() throws Exception {
-    IConfigMapper mapper = helper.makeMapper("custom_enum_section.yml", this::getConverterFor);
+    IConfigMapper mapper = helper.makeMapper("custom_enum_section.yml", getConverterRegistry());
     CustomEnumSection section = mapper.mapSection(null, CustomEnumSection.class);
 
     assertEquals(ECustomEnum.HELLO, section.getCustomEnumA());
@@ -319,17 +320,31 @@ public class ConfigMapperTests {
     assertNull(section.getCustomEnumInvalid());
   }
 
-  private FValueConverter getConverterFor(Class<?> type) {
-    if (type == ECustomEnum.class) {
-      return (value, evaluator) -> {
-        try {
-          ConfigValue cv = new ConfigValue(value, evaluator);
-          return ECustomEnum.valueOf(cv.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
-        } catch (Exception ignored) {}
-        return null;
-      };
-    }
+  private IValueConverterRegistry getConverterRegistry() {
+    return new IValueConverterRegistry() {
 
-    return null;
+      @Override
+      public @Nullable Class<?> getRequiredTypeFor(Class<?> type) {
+        if (type == ECustomEnum.class)
+          return Object.class;
+        return null;
+      }
+
+      @Override
+      public @Nullable FValueConverter getConverterFor(Class<?> type) {
+        if (type == ECustomEnum.class) {
+
+          return (value, evaluator) -> {
+            try {
+              ConfigValue cv = new ConfigValue(value, evaluator);
+              return ECustomEnum.valueOf(cv.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT));
+            } catch (Exception ignored) {}
+            return null;
+          };
+        }
+
+        return null;
+      }
+    };
   }
 }
