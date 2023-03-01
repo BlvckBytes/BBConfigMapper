@@ -95,6 +95,8 @@ public class ConfigValue implements IEvaluable {
     return (T) type.getInterpreter().apply(input, env);
   }
 
+  // FIXME: The following method could really use some attention...
+
   /**
    * Interpret a nullable input value as a scalar, list or map configuration
    * value by making use of {@link #interpretScalar} to either convert to a scalar
@@ -108,18 +110,21 @@ public class ConfigValue implements IEvaluable {
   @SuppressWarnings("unchecked")
   private<T> T interpret(@Nullable Object input, Class<T> type, @Nullable ScalarType[] genericTypes, IEvaluationEnvironment env) {
 
+    if (input instanceof AExpression && this.evaluator != null)
+      input = this.evaluator.evaluateExpression((AExpression) input, env);
+
     if (type == List.class || type == Set.class) {
 
       if (genericTypes == null || genericTypes.length < 1 || genericTypes[0] == null)
         throw new IllegalStateException("Cannot require a List without specifying a generic type");
 
-      List<?> items;
+      Collection<?> items;
 
       // Turn a scalar value into a list, if applicable
-      if (!(input instanceof List))
+      if (!(input instanceof Collection))
         items = List.of((Object) interpretScalar(input, genericTypes[0], env));
       else
-        items = (List<?>) input;
+        items = (Collection<?>) input;
 
       Collection<Object> results;
 
