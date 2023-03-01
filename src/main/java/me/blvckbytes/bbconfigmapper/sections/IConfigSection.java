@@ -44,11 +44,10 @@ public interface IConfigSection {
 
   /**
    * Called when a field wasn't found within the config and a default could be set
-   * @param type Target field's type
-   * @param field Target field name
+   * @param field Target field
    * @return Value to use as a default
    */
-  default @Nullable Object defaultFor(Class<?> type, String field) {
+  default @Nullable Object defaultFor(Field field) throws Exception {
     return null;
   }
 

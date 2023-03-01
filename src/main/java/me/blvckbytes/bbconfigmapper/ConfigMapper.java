@@ -136,7 +136,7 @@ public class ConfigMapper implements IConfigMapper {
 
       // Couldn't resolve a non-null value, try to ask for a default value
       if (value == null)
-        value = instance.defaultFor(f.getType(), fName);
+        value = instance.defaultFor(f);
 
       // Only set if the value isn't null, as the default constructor
       // might have already assigned some default value earlier
@@ -425,8 +425,10 @@ public class ConfigMapper implements IConfigMapper {
     logger.logDebug(DebugLogSource.MAPPER, "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
     //#endif
 
+    Object value = resolvePath(path, source);
+
     // It's not marked as always and the current path doesn't exist: return null
-    if (!always && resolvePath(path, source) == null) {
+    if (!always && value == null) {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Returning null for absent path");
       //#endif
@@ -443,8 +445,6 @@ public class ConfigMapper implements IConfigMapper {
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.MAPPER, "Resolving path value as plain object");
     //#endif
-
-    Object value = resolvePath(path, source);
 
     // Requested plain object
     if (type == Object.class)

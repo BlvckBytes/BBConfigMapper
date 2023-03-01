@@ -41,8 +41,8 @@ public class DatabaseSectionStrings implements IConfigSection {
   }
 
   @Override
-  public @Nullable Object defaultFor(Class<?> type, String field) {
-    switch (field) {
+  public @Nullable Object defaultFor(Field field) {
+    switch (field.getName()) {
       case "host":
         return "host_default";
       case "port":

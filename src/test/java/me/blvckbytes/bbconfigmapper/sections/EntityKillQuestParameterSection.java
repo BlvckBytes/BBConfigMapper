@@ -42,10 +42,5 @@ public class EntityKillQuestParameterSection implements IConfigSection {
   }
 
   @Override
-  public @Nullable Object defaultFor(Class<?> type, String field) {
-    return null;
-  }
-
-  @Override
   public void afterParsing(List<Field> fields) {}
 }
