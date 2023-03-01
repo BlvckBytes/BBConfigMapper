@@ -113,12 +113,14 @@ public class ConfigValue implements IEvaluable {
       if (genericTypes == null || genericTypes.length < 1 || genericTypes[0] == null)
         throw new IllegalStateException("Cannot require a List without specifying a generic type");
 
-      // Is not a list, interpret the value as the requested generic type
-      // and return a list with that one entry only
-      if (!(input instanceof List))
-        return (T) List.of((Object) interpretScalar(input, genericTypes[0], env));
+      List<?> items;
 
-      List<?> items = (List<?>) input;
+      // Turn a scalar value into a list, if applicable
+      if (!(input instanceof List))
+        items = List.of((Object) interpretScalar(input, genericTypes[0], env));
+      else
+        items = (List<?>) input;
+
       Collection<Object> results;
 
       if (type == List.class)
