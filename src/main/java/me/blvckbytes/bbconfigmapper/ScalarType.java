@@ -36,6 +36,7 @@ import java.util.function.BiFunction;
 @Getter
 @AllArgsConstructor
 public enum ScalarType {
+  INT(int.class, (i, e) -> (int) e.getValueInterpreter().asLong(i)),
   LONG(long.class, (i, e) -> e.getValueInterpreter().asLong(i)),
   DOUBLE(double.class, (i, e) -> e.getValueInterpreter().asDouble(i)),
   BOOLEAN(boolean.class, (i, e) -> e.getValueInterpreter().asBoolean(i)),
@@ -49,6 +50,8 @@ public enum ScalarType {
 
   static {
     lookupTable = new HashMap<>();
+    lookupTable.put(int.class, INT);
+    lookupTable.put(Integer.class, INT);
     lookupTable.put(long.class, LONG);
     lookupTable.put(Long.class, LONG);
     lookupTable.put(double.class, DOUBLE);
