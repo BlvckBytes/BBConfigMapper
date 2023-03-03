@@ -22,6 +22,8 @@
         <!-- Always fall back to true (safe) -->
         <!-- Request non-production with "-Dproduction=false" -->
         <production>true</production>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
