@@ -268,6 +268,20 @@ public class ConfigMapper implements IConfigMapper {
       return null;
     }
 
+    FValueConverter converter = null;
+    if (converterRegistry != null) {
+      Class<?> requiredType = converterRegistry.getRequiredTypeFor(type);
+      converter = converterRegistry.getConverterFor(type);
+
+      if (requiredType != null && converter != null) {
+        //#if mvn.project.property.production != "true"
+        logger.logDebug(DebugLogSource.MAPPER, "Using custom converter for type=" + type);
+        //#endif
+
+        type = requiredType;
+      }
+    }
+
     if (IConfigSection.class.isAssignableFrom(type)) {
       //#if mvn.project.property.production != "true"
       logger.logDebug(DebugLogSource.MAPPER, "Parsing value as config-section");
@@ -280,7 +294,12 @@ public class ConfigMapper implements IConfigMapper {
         input = new HashMap<>();
       }
 
-      return mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(IConfigSection.class));
+      Object value = mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(IConfigSection.class));
+
+      if (converter != null)
+        value = converter.apply(value, evaluator);
+
+      return value;
     }
 
     //#if mvn.project.property.production != "true"
