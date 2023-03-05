@@ -44,6 +44,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 public class YamlConfig implements IConfig {
 
@@ -54,7 +55,7 @@ public class YamlConfig implements IConfig {
   private static final Yaml YAML;
   private static final DumperOptions DUMPER_OPTIONS;
 
-  private final IExpressionEvaluator evaluator;
+  private final @Nullable IExpressionEvaluator evaluator;
   private final ILogger logger;
   private final @Nullable String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
@@ -72,7 +73,7 @@ public class YamlConfig implements IConfig {
     YAML = new Yaml(new Constructor(loaderOptions), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, loaderOptions);
   }
 
-  public YamlConfig(IExpressionEvaluator evaluator, ILogger logger, @Nullable String expressionMarkerSuffix) {
+  public YamlConfig(@Nullable IExpressionEvaluator evaluator, ILogger logger, @Nullable String expressionMarkerSuffix) {
     this.evaluator = evaluator;
     this.logger = logger;
     this.expressionMarkerSuffix = expressionMarkerSuffix;
@@ -110,6 +111,48 @@ public class YamlConfig implements IConfig {
     }
 
     YAML.serialize(this.rootNode, writer);
+  }
+
+  /**
+   * Extends keys which the provided config contains but are absent on this instance
+   * by copying over the values those keys hold
+   * @param other Config to extend from
+   * @return Number of updated keys
+   */
+  public int extendMissingKeys(YamlConfig other) {
+    if (other.rootNode == null)
+      throw new IllegalStateException("Other config has not yet been loaded");
+
+    return forEachKeyPathRecursively(other.rootNode, null, (keyPath, value) -> {
+      if (this.exists(keyPath))
+        return 0;
+
+      // Take the whole node from the other config in order to also carry over comments, formatting, etc
+      this.updatePathValue(keyPath, value, true);
+      return 1;
+    });
+  }
+
+  private int forEachKeyPathRecursively(MappingNode node, @Nullable String parentPath, BiFunction<String, Node, Integer> consumer) {
+    int updatedKeys = 0;
+
+    for (NodeTuple tuple : node.getValue()) {
+      Node valueNode = tuple.getValueNode();
+      Node keyNode = tuple.getKeyNode();
+
+      if (keyNode instanceof ScalarNode) {
+        String keyString = ((ScalarNode) keyNode).getValue();
+        String keyPath = parentPath != null ? parentPath + "." + keyString : keyString;
+        updatedKeys += consumer.apply(keyPath, valueNode);
+
+        if (valueNode instanceof MappingNode) {
+          String nextKeyParentPath = parentPath == null ? keyString : parentPath + "." + keyString;
+          updatedKeys += forEachKeyPathRecursively((MappingNode) valueNode, nextKeyParentPath, consumer);
+        }
+      }
+    }
+
+    return updatedKeys;
   }
 
   @Override
@@ -573,7 +616,7 @@ public class YamlConfig implements IConfig {
 
     // If a node is marked for expression either itself or by a parent node, it
     // will be parsed as such, no matter it's tag, as it's a user-choice
-    if (markedForExpressions)
+    if (evaluator != null && markedForExpressions)
       return evaluator.optimizeExpression(evaluator.parseString(node.getValue()));
 
     if (tag == Tag.STR)
