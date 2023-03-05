@@ -24,12 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class BlockBreakQuestParameterSection implements IConfigSection {
 
   private String material;
@@ -42,4 +39,12 @@ public class BlockBreakQuestParameterSection implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getMaterial() {
+    return material;
+  }
+
+  public String getWorld() {
+    return world;
+  }
 }

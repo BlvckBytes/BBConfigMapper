@@ -24,13 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class EntityKillQuestParameterSection implements IConfigSection {
 
   private String entityType;
@@ -43,4 +39,12 @@ public class EntityKillQuestParameterSection implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getEntityType() {
+    return entityType;
+  }
+
+  public String getEntityName() {
+    return entityName;
+  }
 }

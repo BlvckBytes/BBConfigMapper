@@ -24,7 +24,6 @@
 
 package me.blvckbytes.bbconfigmapper;
 
-import lombok.Getter;
 import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.GPEEE;
@@ -38,7 +37,6 @@ import java.util.*;
 
 public class ConfigMapper implements IConfigMapper {
 
-  @Getter
   private final IConfig config;
 
   private final ILogger logger;
@@ -62,6 +60,11 @@ public class ConfigMapper implements IConfigMapper {
     this.logger = logger;
     this.evaluator = evaluator;
     this.converterRegistry = converterRegistry;
+  }
+
+  @Override
+  public IConfig getConfig() {
+    return config;
   }
 
   @Override

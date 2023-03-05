@@ -24,12 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class SelfRefSection implements IConfigSection {
 
   private SelfRefSection self;
@@ -41,4 +38,8 @@ public class SelfRefSection implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public SelfRefSection getSelf() {
+    return self;
+  }
 }

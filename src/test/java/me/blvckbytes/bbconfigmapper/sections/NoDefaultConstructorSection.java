@@ -24,17 +24,18 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
 public class NoDefaultConstructorSection implements IConfigSection {
 
   private String a, b, c;
+
+  public NoDefaultConstructorSection(String a, String b, String c) {
+    this.a = a;
+    this.b = b;
+    this.c = c;
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

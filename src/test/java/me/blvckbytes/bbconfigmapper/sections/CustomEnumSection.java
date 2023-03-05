@@ -24,9 +24,6 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-
-@Getter
 public class CustomEnumSection implements IConfigSection {
 
   private ECustomEnum customEnumA;
@@ -34,4 +31,19 @@ public class CustomEnumSection implements IConfigSection {
   private ECustomEnum customEnumC;
   private ECustomEnum customEnumInvalid;
 
+  public ECustomEnum getCustomEnumA() {
+    return customEnumA;
+  }
+
+  public ECustomEnum getCustomEnumB() {
+    return customEnumB;
+  }
+
+  public ECustomEnum getCustomEnumC() {
+    return customEnumC;
+  }
+
+  public ECustomEnum getCustomEnumInvalid() {
+    return customEnumInvalid;
+  }
 }

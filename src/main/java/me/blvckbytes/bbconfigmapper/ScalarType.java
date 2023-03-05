@@ -24,8 +24,6 @@
 
 package me.blvckbytes.bbconfigmapper;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,8 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-@Getter
-@AllArgsConstructor
 public enum ScalarType {
   INT(int.class, (i, e) -> (int) e.getValueInterpreter().asLong(i)),
   LONG(long.class, (i, e) -> e.getValueInterpreter().asLong(i)),
@@ -59,6 +55,19 @@ public enum ScalarType {
     lookupTable.put(boolean.class, BOOLEAN);
     lookupTable.put(Boolean.class, BOOLEAN);
     lookupTable.put(String.class, STRING);
+  }
+
+  ScalarType(Class<?> type, BiFunction<@Nullable Object, IEvaluationEnvironment, Object> interpreter) {
+    this.type = type;
+    this.interpreter = interpreter;
+  }
+
+  public Class<?> getType() {
+    return type;
+  }
+
+  public BiFunction<Object, IEvaluationEnvironment, Object> getInterpreter() {
+    return interpreter;
   }
 
   public static @Nullable ScalarType fromClass(Class<?> c) {

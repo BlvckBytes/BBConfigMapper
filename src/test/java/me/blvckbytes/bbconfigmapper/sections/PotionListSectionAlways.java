@@ -24,12 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class PotionListSectionAlways implements IConfigSection {
 
   private String type;
@@ -44,4 +41,12 @@ public class PotionListSectionAlways implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getType() {
+    return type;
+  }
+
+  public List<PotionEffectSection> getEffects() {
+    return effects;
+  }
 }

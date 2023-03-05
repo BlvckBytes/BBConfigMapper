@@ -24,12 +24,10 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class PotionEffectSection implements IConfigSection {
 
   private String effect, duration, amplifier;
@@ -41,4 +39,16 @@ public class PotionEffectSection implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getEffect() {
+    return effect;
+  }
+
+  public String getDuration() {
+    return duration;
+  }
+
+  public String getAmplifier() {
+    return amplifier;
+  }
 }

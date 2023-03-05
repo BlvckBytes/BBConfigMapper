@@ -24,13 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class IgnoreSection implements IConfigSection {
 
   @CSIgnore
@@ -41,7 +37,6 @@ public class IgnoreSection implements IConfigSection {
   @CSIgnore
   private String ignored3;
 
-  @Getter
   private static String ignored4;
 
   @Override
@@ -51,4 +46,20 @@ public class IgnoreSection implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getIgnored1() {
+    return ignored1;
+  }
+
+  public String getIgnored2() {
+    return ignored2;
+  }
+
+  public String getIgnored3() {
+    return ignored3;
+  }
+
+  public static String getIgnored4() {
+    return ignored4;
+  }
 }

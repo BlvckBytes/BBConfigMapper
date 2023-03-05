@@ -24,13 +24,11 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
 import me.blvckbytes.bbconfigmapper.IEvaluable;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class DatabaseSectionEvaluables implements IConfigSection {
 
   private IEvaluable host, port, database, username, password;
@@ -42,4 +40,24 @@ public class DatabaseSectionEvaluables implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public IEvaluable getHost() {
+    return host;
+  }
+
+  public IEvaluable getPort() {
+    return port;
+  }
+
+  public IEvaluable getDatabase() {
+    return database;
+  }
+
+  public IEvaluable getUsername() {
+    return username;
+  }
+
+  public IEvaluable getPassword() {
+    return password;
+  }
 }

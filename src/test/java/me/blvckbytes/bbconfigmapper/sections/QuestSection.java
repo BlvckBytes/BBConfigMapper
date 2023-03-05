@@ -24,12 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class QuestSection implements IConfigSection {
 
   private String type;
@@ -51,6 +48,11 @@ public class QuestSection implements IConfigSection {
     return null;
   }
 
-  @Override
-  public void afterParsing(List<Field> fields) {}
+  public String getType() {
+    return type;
+  }
+
+  public Object getParameter() {
+    return parameter;
+  }
 }

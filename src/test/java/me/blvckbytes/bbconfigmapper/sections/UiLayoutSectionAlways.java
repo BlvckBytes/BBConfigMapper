@@ -24,14 +24,12 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
 import me.blvckbytes.bbconfigmapper.IEvaluable;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-@Getter
 public class UiLayoutSectionAlways implements IConfigSection {
 
   private String uiName;
@@ -46,4 +44,12 @@ public class UiLayoutSectionAlways implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getUiName() {
+    return uiName;
+  }
+
+  public Map<String, IEvaluable> getLayout() {
+    return layout;
+  }
 }

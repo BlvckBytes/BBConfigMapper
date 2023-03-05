@@ -24,13 +24,11 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Getter
 public class DatabaseSectionStrings implements IConfigSection {
 
   private String host, port, database, username, password;
@@ -53,4 +51,24 @@ public class DatabaseSectionStrings implements IConfigSection {
 
   @Override
   public void afterParsing(List<Field> fields) {}
+
+  public String getHost() {
+    return host;
+  }
+
+  public String getPort() {
+    return port;
+  }
+
+  public String getDatabase() {
+    return database;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
 }
