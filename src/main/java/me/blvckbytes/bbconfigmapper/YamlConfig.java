@@ -119,7 +119,7 @@ public class YamlConfig implements IConfig {
     //#endif
 
     Tuple<@Nullable Node, Boolean> target = locateNode(path, false, false);
-    Object value = target.getA() == null ? null : unwrapNode(target.getA(), target.getB());
+    Object value = target.a == null ? null : unwrapNode(target.a, target.b);
 
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "Returning content of path=" + path + " with value=" + value);
@@ -183,7 +183,7 @@ public class YamlConfig implements IConfig {
 
     // For a key to exist, it's path has to exist within the
     // config, even if it points at a null value
-    boolean exists = locateNode(path, true, false).getA() != null;
+    boolean exists = locateNode(path, true, false).a != null;
 
     //#if mvn.project.property.production != "true"
     logger.logDebug(DebugLogSource.YAML, "Returning existence value for path=" + path + " of exists=" + exists);
@@ -198,7 +198,7 @@ public class YamlConfig implements IConfig {
     logger.logDebug(DebugLogSource.YAML, "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
     //#endif
 
-    Node target = locateNode(path, self, false).getA();
+    Node target = locateNode(path, self, false).a;
 
     if (target == null)
       throw new IllegalStateException("Cannot attach a comment to a non-existing path");
@@ -219,7 +219,7 @@ public class YamlConfig implements IConfig {
     logger.logDebug(DebugLogSource.YAML, "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
     //#endif
 
-    Node target = locateNode(path, self, false).getA();
+    Node target = locateNode(path, self, false).a;
 
     if (target == null)
       return null;
@@ -263,7 +263,7 @@ public class YamlConfig implements IConfig {
     // Look up the container by the path provided before the last dot (in force mapping creation mode)
     else {
       keyPart = keyPath.substring(lastDotIndex + 1);
-      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).getA();
+      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).a;
     }
 
     if (container == null || keyPart.isBlank())
@@ -358,7 +358,7 @@ public class YamlConfig implements IConfig {
    */
   private @NotNull Tuple<@Nullable Node, Boolean> locateNode(@Nullable String path, boolean self, boolean forceCreateMappings) {
     if (path == null)
-      return Tuple.of(rootNode, false);
+      return new Tuple<>(rootNode, false);
 
     // Keys should never contain any whitespace
     path = path.trim();
@@ -382,7 +382,7 @@ public class YamlConfig implements IConfig {
 
       // Not a mapping node, cannot look up a path-part, the key has to be invalid
       if (!(node instanceof MappingNode))
-        return Tuple.of(null, markedForExpressions);
+        return new Tuple<>(null, markedForExpressions);
 
       MappingNode mapping = (MappingNode) node;
       NodeTuple keyValueTuple = locateKey(mapping, pathPart);
@@ -414,7 +414,7 @@ public class YamlConfig implements IConfig {
 
       // Current path-part does not exist
       if (keyValueTuple == null)
-        return Tuple.of(null, markedForExpressions);
+        return new Tuple<>(null, markedForExpressions);
 
       // On the last iteration and the key itself has been requested
       if (endIndex == path.length() && self)
@@ -434,7 +434,7 @@ public class YamlConfig implements IConfig {
         break;
     }
 
-    return Tuple.of(node, markedForExpressions);
+    return new Tuple<>(node, markedForExpressions);
   }
 
   /**

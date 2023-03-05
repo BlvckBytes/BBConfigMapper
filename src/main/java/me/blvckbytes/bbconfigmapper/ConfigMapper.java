@@ -92,8 +92,8 @@ public class ConfigMapper implements IConfigMapper {
 
     Tuple<List<Field>, Iterator<Field>> fields = findApplicableFields(type);
 
-    while (fields.getB().hasNext()) {
-      Field f = fields.getB().next();
+    while (fields.b.hasNext()) {
+      Field f = fields.b.next();
       String fName = f.getName();
       Class<?> fieldType = f.getType();
 
@@ -147,7 +147,7 @@ public class ConfigMapper implements IConfigMapper {
     }
 
     // This instance won't have any more changes applied to it, call with the list of affected fields
-    instance.afterParsing(fields.getA());
+    instance.afterParsing(fields.a);
 
     return instance;
   }
@@ -189,7 +189,7 @@ public class ConfigMapper implements IConfigMapper {
         return a.getType() == Object.class ? 1 : -1;
       }).iterator();
 
-    return Tuple.of(affectedFields, fieldI);
+    return new Tuple<>(affectedFields, fieldI);
   }
 
   /**
