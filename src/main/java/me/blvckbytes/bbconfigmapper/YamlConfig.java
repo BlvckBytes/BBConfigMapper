@@ -28,7 +28,6 @@ import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
 import me.blvckbytes.gpeee.logging.ILogger;
-import me.blvckbytes.utilitytypes.FTriFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -123,26 +122,26 @@ public class YamlConfig implements IConfig {
     if (other.rootNode == null)
       throw new IllegalStateException("Other config has not yet been loaded");
 
-    return forEachKeyPathRecursively(other.rootNode, null, (keyPath, nodeTuple, tupleIndex) -> {
-      if (this.exists(keyPath))
+    return forEachKeyPathRecursively(other.rootNode, null, (tuple, pathOfTuple, indexOfTuple) -> {
+      if (this.exists(pathOfTuple))
         return false;
 
-      MappingNode container = locateContainerNode(keyPath, true).a;
+      MappingNode container = locateContainerNode(pathOfTuple, true).a;
       List<NodeTuple> containerTuples = container.getValue();
 
       // The new key is at an index which doesn't yet exist, add to the end of the tuple list
-      if (tupleIndex >= containerTuples.size()) {
-        containerTuples.add(nodeTuple);
+      if (indexOfTuple >= containerTuples.size()) {
+        containerTuples.add(tuple);
         return true;
       }
 
       // Insert the new tuple at the right index
-      containerTuples.add(tupleIndex, nodeTuple);
+      containerTuples.add(indexOfTuple, tuple);
       return true;
     });
   }
 
-  private int forEachKeyPathRecursively(MappingNode node, @Nullable String parentPath, FTriFunction<String, NodeTuple, Integer, Boolean> consumer) {
+  private int forEachKeyPathRecursively(MappingNode node, @Nullable String parentPath, FExtensionCandidateHandler handler) {
     int updatedKeys = 0;
 
     List<NodeTuple> nodeTuples = node.getValue();
@@ -156,7 +155,7 @@ public class YamlConfig implements IConfig {
         String keyPath = parentPath != null ? parentPath + "." + keyString : keyString;
 
         // Take the whole node from the other config in order to also carry over comments, formatting, etc
-        boolean didConsumerUpdate = consumer.apply(keyPath, tuple, tupleIndex);
+        boolean didConsumerUpdate = handler.apply(tuple, keyPath, tupleIndex);
 
         if (didConsumerUpdate)
           ++updatedKeys;
@@ -168,7 +167,7 @@ public class YamlConfig implements IConfig {
 
         if (valueNode instanceof MappingNode) {
           String nextKeyParentPath = parentPath == null ? keyString : parentPath + "." + keyString;
-          updatedKeys += forEachKeyPathRecursively((MappingNode) valueNode, nextKeyParentPath, consumer);
+          updatedKeys += forEachKeyPathRecursively((MappingNode) valueNode, nextKeyParentPath, handler);
         }
       }
     }
