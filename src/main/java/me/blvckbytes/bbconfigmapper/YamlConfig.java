@@ -28,6 +28,7 @@ import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
 import me.blvckbytes.gpeee.logging.ILogger;
+import me.blvckbytes.utilitytypes.FTriFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -44,7 +45,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 
 public class YamlConfig implements IConfig {
 
@@ -123,27 +123,48 @@ public class YamlConfig implements IConfig {
     if (other.rootNode == null)
       throw new IllegalStateException("Other config has not yet been loaded");
 
-    return forEachKeyPathRecursively(other.rootNode, null, (keyPath, value) -> {
+    return forEachKeyPathRecursively(other.rootNode, null, (keyPath, nodeTuple, tupleIndex) -> {
       if (this.exists(keyPath))
-        return 0;
+        return false;
 
-      // Take the whole node from the other config in order to also carry over comments, formatting, etc
-      this.updatePathValue(keyPath, value, true);
-      return 1;
+      MappingNode container = locateContainerNode(keyPath, true).a;
+      List<NodeTuple> containerTuples = container.getValue();
+
+      // The new key is at an index which doesn't yet exist, add to the end of the tuple list
+      if (tupleIndex >= containerTuples.size()) {
+        containerTuples.add(nodeTuple);
+        return true;
+      }
+
+      // Insert the new tuple at the right index
+      containerTuples.add(tupleIndex, nodeTuple);
+      return true;
     });
   }
 
-  private int forEachKeyPathRecursively(MappingNode node, @Nullable String parentPath, BiFunction<String, Node, Integer> consumer) {
+  private int forEachKeyPathRecursively(MappingNode node, @Nullable String parentPath, FTriFunction<String, NodeTuple, Integer, Boolean> consumer) {
     int updatedKeys = 0;
 
-    for (NodeTuple tuple : node.getValue()) {
+    List<NodeTuple> nodeTuples = node.getValue();
+    for (int tupleIndex = 0; tupleIndex < nodeTuples.size(); tupleIndex++) {
+      NodeTuple tuple = nodeTuples.get(tupleIndex);
       Node valueNode = tuple.getValueNode();
       Node keyNode = tuple.getKeyNode();
 
       if (keyNode instanceof ScalarNode) {
         String keyString = ((ScalarNode) keyNode).getValue();
         String keyPath = parentPath != null ? parentPath + "." + keyString : keyString;
-        updatedKeys += consumer.apply(keyPath, valueNode);
+
+        // Take the whole node from the other config in order to also carry over comments, formatting, etc
+        boolean didConsumerUpdate = consumer.apply(keyPath, tuple, tupleIndex);
+
+        if (didConsumerUpdate)
+          ++updatedKeys;
+
+        // No need to visit the children of the current key, as they've already
+        // been taken care of by copying their parent
+        if (didConsumerUpdate)
+          continue;
 
         if (valueNode instanceof MappingNode) {
           String nextKeyParentPath = parentPath == null ? keyString : parentPath + "." + keyString;
@@ -286,12 +307,7 @@ public class YamlConfig implements IConfig {
     return comments;
   }
 
-  /**
-   * Update the value at the key a given path points to within the tree
-   * @param keyPath Path to change the value at
-   * @param value New value node, leave null to just remove this node
-   */
-  private void updatePathValue(String keyPath, @Nullable Node value, boolean forceCreateMappings) {
+  private Tuple<MappingNode, String> locateContainerNode(String keyPath, boolean forceCreateMappings) {
     int lastDotIndex = keyPath.lastIndexOf('.');
     String keyPart;
     MappingNode container;
@@ -311,6 +327,22 @@ public class YamlConfig implements IConfig {
 
     if (container == null || keyPart.isBlank())
       throw new IllegalArgumentException("Invalid path specified: " + keyPath);
+
+    if (!keyPath.endsWith(keyPart))
+      throw new IllegalStateException("Could not locate the containing node for path: " + keyPath);
+
+    return new Tuple<>(container, keyPart);
+  }
+
+  /**
+   * Update the value at the key a given path points to within the tree
+   * @param keyPath Path to change the value at
+   * @param value New value node, leave null to just remove this node
+   */
+  private void updatePathValue(String keyPath, @Nullable Node value, boolean forceCreateMappings) {
+    Tuple<MappingNode, String> containerAndKeyPart = locateContainerNode(keyPath, forceCreateMappings);
+    MappingNode container = containerAndKeyPart.a;
+    String keyPart = containerAndKeyPart.b;
 
     // Check if there's an existing tuple
     NodeTuple existingTuple = locateKey(container, keyPart);

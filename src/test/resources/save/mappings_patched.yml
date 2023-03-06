@@ -1,0 +1,42 @@
+a:
+  b: first
+  c: second
+  # These comments should be preserved
+  d: 3
+  # But this key is new, with all of it's children
+  e:
+    f: 25
+    h:
+      j: 'hello, world'
+
+b:
+  c: nested
+  d:
+    e: mapping
+    f: 1.2
+
+# Comment A
+newTopLevelSectionInTheMiddle:
+  foo:
+    # Comment B
+    bar:
+    - 12
+    - test
+
+g:
+  h: nested
+  j: # Yet another new entry, inserted in the middle
+    - 15
+    - 18
+  # List style should also be preserved
+  i: [list, items]
+
+x:
+  y:
+    z:
+      last: 20
+
+newTopLevelSectionAtTheEnd:
+  # Comment C
+  hello: world
+  test: 55

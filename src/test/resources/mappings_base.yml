@@ -1,0 +1,21 @@
+a:
+  b: first
+  c: second
+  # These comments should be preserved
+  d: 3
+
+b:
+  c: nested
+  d:
+    e: mapping
+    f: 1.2
+
+g:
+  h: nested
+  # List style should also be preserved
+  i: [list, items]
+
+x:
+  y:
+    z:
+      last: 20
