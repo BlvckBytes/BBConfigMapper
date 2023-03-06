@@ -568,7 +568,7 @@ public class YamlConfig implements IConfig {
     }
 
     if (node instanceof MappingNode) {
-      Map<Object, Object> values = new HashMap<>();
+      Map<Object, Object> values = new LinkedHashMap<>();
 
       for (NodeTuple item : ((MappingNode) node).getValue()) {
         boolean isItemMarkedForExpressions = markedForExpressions;

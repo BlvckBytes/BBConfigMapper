@@ -25,4 +25,5 @@ g:
 x:
   y:
     z:
-      last: 20
+      last:
+        a: 5

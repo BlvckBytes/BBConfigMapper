@@ -68,6 +68,7 @@ public class YamlConfigWriteTests {
     helper.assertSetInMemory("g.i", helper.list("this", "has", "been", "overwritten"), config);
     helper.assertSetInMemory("a", helper.map("b", 21L, "x", "hello", "d", helper.map("y", false)), config);
     helper.assertSetInMemory("b.d", helper.map("e", helper.list(1.2D, 2L, null), "f", helper.map("hello", "world")), config);
+    helper.assertSetInMemory("x.y.z.last", helper.map("a", 5L), config);
     helper.assertSave("mappings_overwritten.yml", config);
   }
 
