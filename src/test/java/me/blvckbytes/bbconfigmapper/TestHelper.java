@@ -191,10 +191,10 @@ public class TestHelper {
    * Asserts that an executable throws an exception of a certain type with a specific message
    * @param expectedType Expected exception type
    * @param executable Executable to run
-   * @param expectedMessage Expected exception message
+   * @param containedMessagePart Expected contained part in exception message
    */
-  public <T extends Throwable> void assertThrowsWithMsg(Class<T> expectedType, Executable executable, String expectedMessage) {
+  public <T extends Throwable> void assertThrowsWithMsg(Class<T> expectedType, Executable executable, String containedMessagePart) {
     T exception = assertThrows(expectedType, executable);
-    assertEquals(exception.getMessage(), expectedMessage);
+    assertTrue(exception.getMessage().contains(containedMessagePart), "Exception message did not contain expected message part");
   }
 }

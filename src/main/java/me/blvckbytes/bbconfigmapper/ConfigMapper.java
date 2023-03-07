@@ -87,64 +87,71 @@ public class ConfigMapper implements IConfigMapper {
    * @return Instantiated class with mapped fields
    */
   private <T extends IConfigSection> T mapSectionSub(@Nullable String root, @Nullable Map<?, ?> source, Class<T> type) throws Exception {
-    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the subroutine of mapping path=" + root + " to type=" + type + " using source=" + source);
-    T instance = findDefaultConstructor(type).newInstance();
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the subroutine of mapping path=" + root + " to type=" + type + " using source=" + source);
+      T instance = findDefaultConstructor(type).newInstance();
 
-    Tuple<List<Field>, Iterator<Field>> fields = findApplicableFields(type);
+      Tuple<List<Field>, Iterator<Field>> fields = findApplicableFields(type);
 
-    while (fields.b.hasNext()) {
-      Field f = fields.b.next();
-      String fName = f.getName();
-      Class<?> fieldType = f.getType();
+      while (fields.b.hasNext()) {
+        Field f = fields.b.next();
+        String fName = f.getName();
 
-      Class<?> finalFieldType = fieldType;
-      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Processing field=" + fName + " of type=" + finalFieldType);
+        try {
+          Class<?> fieldType = f.getType();
 
-      // Object fields trigger a call to runtime decide their type based on previous fields
-      if (fieldType == Object.class) {
-        Class<?> decidedType = instance.runtimeDecide(fName);
+          Class<?> finalFieldType = fieldType;
+          logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Processing field=" + fName + " of type=" + finalFieldType);
 
-        if (decidedType == null)
-          throw new IllegalStateException("Requesting plain objects is disallowed");
+          // Object fields trigger a call to runtime decide their type based on previous fields
+          if (fieldType == Object.class) {
+            Class<?> decidedType = instance.runtimeDecide(fName);
 
-        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
+            if (decidedType == null)
+              throw new MappingError("Requesting plain objects is disallowed");
 
-        fieldType = decidedType;
-      }
+            logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
 
-      FValueConverter converter = null;
-      if (converterRegistry != null) {
-        Class<?> requiredType = converterRegistry.getRequiredTypeFor(fieldType);
-        converter = converterRegistry.getConverterFor(fieldType);
+            fieldType = decidedType;
+          }
 
-        if (requiredType != null && converter != null) {
-          logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Using custom converter for type=" + finalFieldType);
+          FValueConverter converter = null;
+          if (converterRegistry != null) {
+            Class<?> requiredType = converterRegistry.getRequiredTypeFor(fieldType);
+            converter = converterRegistry.getConverterFor(fieldType);
 
-          fieldType = requiredType;
+            if (requiredType != null && converter != null) {
+              logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Using custom converter for type=" + finalFieldType);
+
+              fieldType = requiredType;
+            }
+          }
+
+          Object value = resolveFieldValue(root, source, f, fieldType);
+
+          if (converter != null)
+            value = converter.apply(value, evaluator);
+
+          // Couldn't resolve a non-null value, try to ask for a default value
+          if (value == null)
+            value = instance.defaultFor(f);
+
+          // Only set if the value isn't null, as the default constructor
+          // might have already assigned some default value earlier
+          if (value == null)
+            continue;
+
+          f.set(instance, value);
+        } catch (MappingError error) {
+          IllegalStateException exception = new IllegalStateException(error.getMessage() + " (at path '" + joinPaths(root, fName) + "')");
+          exception.addSuppressed(error);
+          throw exception;
         }
       }
 
-      Object value = resolveFieldValue(root, source, f, fieldType);
+      // This instance won't have any more changes applied to it, call with the list of affected fields
+      instance.afterParsing(fields.a);
 
-      if (converter != null)
-        value = converter.apply(value, evaluator);
-
-      // Couldn't resolve a non-null value, try to ask for a default value
-      if (value == null)
-        value = instance.defaultFor(f);
-
-      // Only set if the value isn't null, as the default constructor
-      // might have already assigned some default value earlier
-      if (value == null)
-        continue;
-
-      f.set(instance, value);
-    }
-
-    // This instance won't have any more changes applied to it, call with the list of affected fields
-    instance.afterParsing(fields.a);
-
-    return instance;
+      return instance;
   }
 
   /**
@@ -167,7 +174,7 @@ public class ConfigMapper implements IConfigMapper {
           continue;
 
         if (f.getType() == type)
-          throw new IllegalStateException("Sections cannot use self-referencing fields");
+          throw new IllegalStateException("Sections cannot use self-referencing fields (" + type + ", " + f.getName() + ")");
 
         f.setAccessible(true);
         affectedFields.add(f);
@@ -209,7 +216,7 @@ public class ConfigMapper implements IConfigMapper {
       String key = dotIndex < 0 ? path : path.substring(0, dotIndex);
 
       if (key.isBlank())
-        throw new IllegalStateException("Cannot resolve a blank key");
+        throw new MappingError("Cannot resolve a blank key");
 
       path = dotIndex < 0 ? "" : path.substring(dotIndex + 1);
       dotIndex = path.indexOf('.');
@@ -265,6 +272,14 @@ public class ConfigMapper implements IConfigMapper {
       }
     }
 
+    // Requested plain object
+    if (type == Object.class) {
+      if (converter != null)
+        input = converter.apply(input, evaluator);
+
+      return input;
+    }
+
     if (IConfigSection.class.isAssignableFrom(type)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Parsing value as config-section");
 
@@ -308,7 +323,7 @@ public class ConfigMapper implements IConfigMapper {
     if (type == boolean.class || type == Boolean.class)
       return evaluable.<Boolean>asScalar(ScalarType.BOOLEAN, GPEEE.EMPTY_ENVIRONMENT);
 
-    throw new IllegalStateException("Unsupported type specified: " + type);
+    throw new MappingError("Unsupported type specified: " + type);
   }
 
   /**
@@ -332,8 +347,23 @@ public class ConfigMapper implements IConfigMapper {
 
     logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Mapping values individually");
 
-    for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
-      result.put(convertType(entry.getKey(), genericTypes.get(0)), convertType(entry.getValue(), genericTypes.get(1)));
+    for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+      Object resultKey;
+      try {
+        resultKey = convertType(entry.getKey(), genericTypes.get(0));
+      } catch (MappingError error) {
+        throw new MappingError(error.getMessage() + " (at the key of a map)");
+      }
+
+      Object resultValue;
+      try {
+        resultValue = convertType(entry.getValue(), genericTypes.get(1));
+      } catch (MappingError error) {
+        throw new MappingError(error.getMessage() + " (at value for key=" + resultKey + " of a map)");
+      }
+
+      result.put(resultKey, resultValue);
+    }
 
     return result;
   }
@@ -358,8 +388,16 @@ public class ConfigMapper implements IConfigMapper {
     }
 
     List<?> list = (List<?>) value;
-    for (Object o : list)
-      result.add(convertType(o, genericTypes.get(0)));
+    for (int i = 0; i < list.size(); i++) {
+      Object itemValue;
+      try {
+        itemValue = convertType(list.get(i), genericTypes.get(0));
+      } catch (MappingError error) {
+        throw new MappingError(error.getMessage() + " (at index " + i + " of a list)");
+      }
+
+      result.add(itemValue);
+    }
 
     return result;
   }
@@ -383,8 +421,16 @@ public class ConfigMapper implements IConfigMapper {
     List<?> list = (List<?>) value;
     Object array = Array.newInstance(arrayType, list.size());
 
-    for (int i = 0; i < list.size(); i++)
-      Array.set(array, i, convertType(list.get(i), arrayType));
+    for (int i = 0; i < list.size(); i++) {
+      Object itemValue;
+      try {
+        itemValue = convertType(list.get(i), arrayType);
+      } catch (MappingError error) {
+        throw new MappingError(error.getMessage() + " (at index " + i + " of an array)");
+      }
+
+      Array.set(array, i, itemValue);
+    }
 
     return array;
   }
@@ -470,7 +516,7 @@ public class ConfigMapper implements IConfigMapper {
       ctor.setAccessible(true);
       return ctor;
     } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("Please specify an empty default constructor");
+      throw new IllegalStateException("Please specify an empty default constructor on " + type);
     }
   }
 
@@ -506,6 +552,6 @@ public class ConfigMapper implements IConfigMapper {
     if (type instanceof ParameterizedType)
       return unwrapType(((ParameterizedType) type).getRawType());
 
-    throw new IllegalStateException("Cannot unwrap type of class=" + type.getClass());
+    throw new MappingError("Cannot unwrap type of class=" + type.getClass());
   }
 }
