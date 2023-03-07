@@ -6,7 +6,7 @@ a:
 
 b:
   c: nested
-  d:
+  d: &myAnchor
     e: mapping
     f: 1.2
 
@@ -14,6 +14,8 @@ g:
   h: nested
   # List style should also be preserved
   i: [list, items]
+  # Anchor names should persist
+  x: *myAnchor
 
 x:
   y:
