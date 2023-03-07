@@ -27,7 +27,6 @@ package me.blvckbytes.bbconfigmapper;
 import me.blvckbytes.bbconfigmapper.logging.DebugLogSource;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
-import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -44,6 +43,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class YamlConfig implements IConfig {
 
@@ -55,7 +56,7 @@ public class YamlConfig implements IConfig {
   private static final DumperOptions DUMPER_OPTIONS;
 
   private final @Nullable IExpressionEvaluator evaluator;
-  private final ILogger logger;
+  private final Logger logger;
   private final @Nullable String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
   private MappingNode rootNode;
@@ -72,7 +73,7 @@ public class YamlConfig implements IConfig {
     YAML = new Yaml(new Constructor(loaderOptions), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, loaderOptions);
   }
 
-  public YamlConfig(@Nullable IExpressionEvaluator evaluator, ILogger logger, @Nullable String expressionMarkerSuffix) {
+  public YamlConfig(@Nullable IExpressionEvaluator evaluator, Logger logger, @Nullable String expressionMarkerSuffix) {
     this.evaluator = evaluator;
     this.logger = logger;
     this.expressionMarkerSuffix = expressionMarkerSuffix;
@@ -90,9 +91,7 @@ public class YamlConfig implements IConfig {
     if (!(root instanceof MappingNode))
       throw new IllegalStateException("The top level of a config has to be a map.");
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Successfully loaded the YAML root node using the provided reader");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Successfully loaded the YAML root node using the provided reader");
 
     // Swap out root node and reset key cache
     this.rootNode = (MappingNode) root;
@@ -100,9 +99,7 @@ public class YamlConfig implements IConfig {
   }
 
   public void save(Writer writer) throws IOException {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Serializing the YAML root node to the provided writer");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Serializing the YAML root node to the provided writer");
 
     if (this.rootNode == null || this.rootNode.getValue().size() == 0) {
       writer.write("");
@@ -177,25 +174,19 @@ public class YamlConfig implements IConfig {
 
   @Override
   public @Nullable Object get(@Nullable String path) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Object at path=" + path + " has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Object at path=" + path + " has been requested");
 
     Tuple<@Nullable Node, Boolean> target = locateNode(path, false, false);
     Object value = target.a == null ? null : unwrapNode(target.a, target.b);
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Returning content of path=" + path + " with value=" + value);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Returning content of path=" + path + " with value=" + value);
 
     return value;
   }
 
   @Override
   public void set(@Nullable String path, @Nullable Object value) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "An update of value=" + value + " at path=" + path + " has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "An update of value=" + value + " at path=" + path + " has been requested");
 
     Node wrappedValue = wrapValue(value);
 
@@ -203,9 +194,7 @@ public class YamlConfig implements IConfig {
       if (!(wrappedValue instanceof MappingNode))
         throw new IllegalArgumentException("Cannot exchange the root-node for a non-map node");
 
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.YAML, "Swapped out the root node");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Swapped out the root node");
 
       rootNode = (MappingNode) wrappedValue;
       return;
@@ -216,14 +205,10 @@ public class YamlConfig implements IConfig {
 
   @Override
   public void remove(@Nullable String path) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "The removal of path=" + path + " has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "The removal of path=" + path + " has been requested");
 
     if (path == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.YAML, "Reset the root node");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Reset the root node");
 
       rootNode = createNewMappingNode(null);
       return;
@@ -240,26 +225,20 @@ public class YamlConfig implements IConfig {
 
   @Override
   public boolean exists(@Nullable String path) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "An existence check of path=" + path + " has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "An existence check of path=" + path + " has been requested");
 
     // For a key to exist, it's path has to exist within the
     // config, even if it points at a null value
     boolean exists = locateNode(path, true, false).a != null;
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Returning existence value for path=" + path + " of exists=" + exists);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Returning existence value for path=" + path + " of exists=" + exists);
 
     return exists;
   }
 
   @Override
   public void attachComment(@Nullable String path, List<String> lines, boolean self) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
 
     Node target = locateNode(path, self, false).a;
 
@@ -278,9 +257,7 @@ public class YamlConfig implements IConfig {
 
   @Override
   public @Nullable List<String> readComment(@Nullable String path, boolean self) {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
 
     Node target = locateNode(path, self, false).a;
 
@@ -299,9 +276,7 @@ public class YamlConfig implements IConfig {
       comments.add(comment.getValue());
     }
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.YAML, "Returning comments for path=" + path + " comments=" + comments);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Returning comments for path=" + path + " comments=" + comments);
 
     return comments;
   }

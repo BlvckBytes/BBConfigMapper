@@ -24,8 +24,9 @@
 
 package me.blvckbytes.bbconfigmapper;
 
-import me.blvckbytes.gpeee.logging.NullLogger;
 import org.junit.jupiter.api.Test;
+
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,7 +38,7 @@ public class YamlConfigExtensionTests {
   @Test
   public void shouldThrowWhenTryingToExtendFromAnUnloadedConfig() throws Exception {
     YamlConfig baseConfig = helper.makeConfig("mappings_base.yml");
-    YamlConfig unloadedConfig = new YamlConfig(null, new NullLogger(), null);
+    YamlConfig unloadedConfig = new YamlConfig(null, Logger.getGlobal(), null);
     assertThrows(IllegalStateException.class, () -> baseConfig.extendMissingKeys(unloadedConfig), "Other config has not yet been loaded");
   }
 

@@ -27,8 +27,6 @@ package me.blvckbytes.bbconfigmapper;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.interpreter.IEvaluationEnvironment;
-import me.blvckbytes.gpeee.logging.ILogger;
-import me.blvckbytes.gpeee.logging.NullLogger;
 import me.blvckbytes.gpeee.parser.expression.AExpression;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.function.Executable;
@@ -39,6 +37,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,11 +45,11 @@ public class TestHelper {
 
   private final IExpressionEvaluator evaluator;
   private final String expressionMarkerSuffix;
-  private final ILogger logger;
+  private final Logger logger;
 
   public TestHelper() {
     this.expressionMarkerSuffix = "$";
-    this.logger = new NullLogger();
+    this.logger = Logger.getGlobal();
     this.evaluator = new GPEEE(logger);
   }
 

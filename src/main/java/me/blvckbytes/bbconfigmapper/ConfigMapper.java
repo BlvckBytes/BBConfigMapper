@@ -29,17 +29,18 @@ import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
-import me.blvckbytes.gpeee.logging.ILogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ConfigMapper implements IConfigMapper {
 
   private final IConfig config;
 
-  private final ILogger logger;
+  private final Logger logger;
   private final IExpressionEvaluator evaluator;
   private final @Nullable IValueConverterRegistry converterRegistry;
 
@@ -52,7 +53,7 @@ public class ConfigMapper implements IConfigMapper {
    */
   public ConfigMapper(
     IConfig config,
-    ILogger logger,
+    Logger logger,
     IExpressionEvaluator evaluator,
     @Nullable IValueConverterRegistry converterRegistry
   ) {
@@ -69,9 +70,7 @@ public class ConfigMapper implements IConfigMapper {
 
   @Override
   public <T extends IConfigSection> T mapSection(@Nullable String root, Class<T> type) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "At the entry point of mapping path=" + root + " to type=" + type);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the entry point of mapping path=" + root + " to type=" + type);
     return mapSectionSub(root, null, type);
   }
 
@@ -88,9 +87,7 @@ public class ConfigMapper implements IConfigMapper {
    * @return Instantiated class with mapped fields
    */
   private <T extends IConfigSection> T mapSectionSub(@Nullable String root, @Nullable Map<?, ?> source, Class<T> type) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "At the subroutine of mapping path=" + root + " to type=" + type + " using source=" + source);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the subroutine of mapping path=" + root + " to type=" + type + " using source=" + source);
     T instance = findDefaultConstructor(type).newInstance();
 
     Tuple<List<Field>, Iterator<Field>> fields = findApplicableFields(type);
@@ -100,9 +97,8 @@ public class ConfigMapper implements IConfigMapper {
       String fName = f.getName();
       Class<?> fieldType = f.getType();
 
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Processing field=" + fName + " of type=" + fieldType);
-      //#endif
+      Class<?> finalFieldType = fieldType;
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Processing field=" + fName + " of type=" + finalFieldType);
 
       // Object fields trigger a call to runtime decide their type based on previous fields
       if (fieldType == Object.class) {
@@ -111,9 +107,7 @@ public class ConfigMapper implements IConfigMapper {
         if (decidedType == null)
           throw new IllegalStateException("Requesting plain objects is disallowed");
 
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
-        //#endif
+        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Called runtimeDecide on field=" + fName + ", yielded type=" + decidedType);
 
         fieldType = decidedType;
       }
@@ -124,9 +118,7 @@ public class ConfigMapper implements IConfigMapper {
         converter = converterRegistry.getConverterFor(fieldType);
 
         if (requiredType != null && converter != null) {
-          //#if mvn.project.property.production != "true"
-          logger.logDebug(DebugLogSource.MAPPER, "Using custom converter for type=" + fieldType);
-          //#endif
+          logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Using custom converter for type=" + finalFieldType);
 
           fieldType = requiredType;
         }
@@ -205,15 +197,11 @@ public class ConfigMapper implements IConfigMapper {
   private @Nullable Object resolvePath(String path, @Nullable Map<?, ?> source) {
     // No object to look in specified, retrieve this path from the config
     if (source == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "No resolving source provided, looking up in config");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "No resolving source provided, looking up in config");
       return config.get(path);
     }
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving source provided, walking map");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving source provided, walking map");
 
     int dotIndex = path.indexOf('.');
 
@@ -230,17 +218,13 @@ public class ConfigMapper implements IConfigMapper {
 
       // Last iteration, respond with the current value
       if (path.length() == 0) {
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Walk ended, returning value=" + value);
-        //#endif
+        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Walk ended, returning value=" + value);
         return value;
       }
 
       // Reached a dead end and not yet at the last iteration
       if (!(value instanceof Map)) {
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Path part key=" + key + " wasn't a map, returning null");
-        //#endif
+        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Path part key=" + key + " wasn't a map, returning null");
         return null;
       }
 
@@ -260,14 +244,12 @@ public class ConfigMapper implements IConfigMapper {
    * @param type Type to convert to
    */
   private @Nullable Object convertType(@Nullable Object input, Class<?> type) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Trying to convert a value to type: " + type);
-    //#endif
+
+    Class<?> finalType = type;
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Trying to convert a value to type: " + finalType);
 
     if (input == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Is null, returning null");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Is null, returning null");
       return null;
     }
 
@@ -277,23 +259,17 @@ public class ConfigMapper implements IConfigMapper {
       converter = converterRegistry.getConverterFor(type);
 
       if (requiredType != null && converter != null) {
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Using custom converter for type=" + type);
-        //#endif
+        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Using custom converter for type=" + finalType);
 
         type = requiredType;
       }
     }
 
     if (IConfigSection.class.isAssignableFrom(type)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Parsing value as config-section");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Parsing value as config-section");
 
       if (!(input instanceof Map)) {
-        //#if mvn.project.property.production != "true"
-        logger.logDebug(DebugLogSource.MAPPER, "Value was null, falling back on empty section");
-        //#endif
+        logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Value was null, falling back on empty section");
         input = new HashMap<>();
       }
 
@@ -305,16 +281,12 @@ public class ConfigMapper implements IConfigMapper {
       return value;
     }
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Wrapping value in evaluable");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Wrapping value in evaluable");
 
     IEvaluable evaluable = new ConfigValue(input, this.evaluator);
 
     if (type == IEvaluable.class) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Returning evaluable");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Returning evaluable");
       return evaluable;
     }
 
@@ -346,9 +318,7 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to assign to the field
    */
   private Object handleResolveMapField(Field f, Object value) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving map field");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving map field");
 
     List<Class<?>> genericTypes = getGenericTypes(f);
     assert genericTypes != null && genericTypes.size() == 2;
@@ -356,15 +326,11 @@ public class ConfigMapper implements IConfigMapper {
     Map<Object, Object> result = new HashMap<>();
 
     if (!(value instanceof Map)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Not a map, returning empty map");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Not a map, returning empty map");
       return result;
     }
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Mapping values individually");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Mapping values individually");
 
     for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet())
       result.put(convertType(entry.getKey(), genericTypes.get(0)), convertType(entry.getValue(), genericTypes.get(1)));
@@ -379,9 +345,7 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to assign to the field
    */
   private Object handleResolveListField(Field f, Object value) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving list field");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving list field");
 
     List<Class<?>> genericTypes = getGenericTypes(f);
     assert genericTypes != null && genericTypes.size() == 1;
@@ -389,9 +353,7 @@ public class ConfigMapper implements IConfigMapper {
     List<Object> result = new ArrayList<>();
 
     if (!(value instanceof List)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning empty list");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Not a list, returning empty list");
       return result;
     }
 
@@ -409,16 +371,12 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to assign to the field
    */
   private Object handleResolveArrayField(Field f, Object value) throws Exception {
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving array field");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving array field");
 
     Class<?> arrayType = f.getType().getComponentType();
 
     if (!(value instanceof List)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Not a list, returning empty array");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Not a list, returning empty array");
       return Array.newInstance(arrayType, 0);
     }
 
@@ -443,38 +401,28 @@ public class ConfigMapper implements IConfigMapper {
     String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, f.getName());
     boolean always = f.isAnnotationPresent(CSAlways.class) || f.getDeclaringClass().isAnnotationPresent(CSAlways.class);
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
 
     Object value = resolvePath(path, source);
 
     // It's not marked as always and the current path doesn't exist: return null
     if (!always && value == null) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Returning null for absent path");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Returning null for absent path");
       return null;
     }
 
     if (IConfigSection.class.isAssignableFrom(type)) {
-      //#if mvn.project.property.production != "true"
-      logger.logDebug(DebugLogSource.MAPPER, "Type is of another section");
-      //#endif
+      logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Type is of another section");
       return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
     }
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolving path value as plain object");
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving path value as plain object");
 
     // Requested plain object
     if (type == Object.class)
       return value;
 
-    //#if mvn.project.property.production != "true"
-    logger.logDebug(DebugLogSource.MAPPER, "Resolved value=" + value);
-    //#endif
+    logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolved value=" + value);
 
     if (Map.class.isAssignableFrom(type))
       return handleResolveMapField(f, value);
