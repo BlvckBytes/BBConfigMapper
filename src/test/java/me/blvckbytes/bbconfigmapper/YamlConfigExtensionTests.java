@@ -48,7 +48,7 @@ public class YamlConfigExtensionTests {
     YamlConfig extensionConfig = helper.makeConfig("mappings_extended.yml");
 
     int numberOfExtendedKeys = baseConfig.extendMissingKeys(extensionConfig);
-    assertEquals(4, numberOfExtendedKeys, "The base config didn't extend as many keys as expected");
+    assertEquals(5, numberOfExtendedKeys, "The base config didn't extend as many keys as expected");
 
     helper.assertSave("mappings_patched.yml", baseConfig);
   }

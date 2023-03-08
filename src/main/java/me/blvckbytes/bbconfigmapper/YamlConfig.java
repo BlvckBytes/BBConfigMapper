@@ -38,9 +38,7 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.nodes.*;
 import org.yaml.snakeyaml.representer.Representer;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
@@ -59,7 +57,9 @@ public class YamlConfig implements IConfig {
   private final Logger logger;
   private final @Nullable String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
+
   private MappingNode rootNode;
+  private String header;
 
   static {
     LoaderOptions loaderOptions = new LoaderOptions();
@@ -96,7 +96,67 @@ public class YamlConfig implements IConfig {
 
     // Swap out root node and reset key cache
     this.rootNode = (MappingNode) root;
+    extractHeader();
     this.locateKeyCache.clear();
+  }
+
+  /**
+   * Extract the header comment from the first key's first node tuple by taking as many
+   * block comment lines as possible until a blank line occurs. If no blank line is to be
+   * found, nothing will be extracted, as the comment is considered to be attached to the key.
+   */
+  private void extractHeader() {
+    List<NodeTuple> rootTuples = this.rootNode.getValue();
+
+    if (rootTuples.size() == 0) {
+      this.header = "";
+      return;
+    }
+
+    Node firstKey = rootTuples.get(0).getKeyNode();
+    List<CommentLine> firstKeyBlockComments = firstKey.getBlockComments();
+
+    if (firstKeyBlockComments == null) {
+      this.header = "";
+      return;
+    }
+
+    List<CommentLine> untouchedBlockComments = new ArrayList<>(firstKeyBlockComments);
+
+    StringBuilder headerBuilder = new StringBuilder();
+    boolean foundBlankLine = false;
+    boolean foundBlockLine = false;
+
+    while (firstKeyBlockComments.size() > 0) {
+      CommentLine firstLine = firstKeyBlockComments.remove(0);
+      CommentType type = firstLine.getCommentType();
+      String value = firstLine.getValue();
+
+      // Collect as many block comment lines as possible
+      if (type == CommentType.BLOCK) {
+        headerBuilder.append("#").append(value).append('\n');
+        foundBlockLine = true;
+        continue;
+      }
+
+      // Stop at (including) the first blank line
+      if (foundBlockLine && firstLine.getCommentType() == CommentType.BLANK_LINE) {
+        headerBuilder.append('\n');
+        foundBlankLine = true;
+        break;
+      }
+
+      // Unwanted comment type, if this is reached, state will be restored also
+      break;
+    }
+
+    // Didn't find a blank line, stop and roll back to vanilla state
+    if (!foundBlankLine) {
+      firstKey.setBlockComments(untouchedBlockComments);
+      headerBuilder.setLength(0);
+    }
+
+    this.header = headerBuilder.toString();
   }
 
   public void save(Writer writer) throws IOException {
@@ -107,6 +167,7 @@ public class YamlConfig implements IConfig {
       return;
     }
 
+    writer.write(this.header);
     YAML.serialize(this.rootNode, writer);
   }
 
@@ -198,6 +259,7 @@ public class YamlConfig implements IConfig {
       logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Swapped out the root node");
 
       rootNode = (MappingNode) wrappedValue;
+      extractHeader();
       return;
     }
 
