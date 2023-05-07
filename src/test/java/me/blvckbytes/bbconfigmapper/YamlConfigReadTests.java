@@ -27,7 +27,8 @@ package me.blvckbytes.bbconfigmapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,9 +91,9 @@ public class YamlConfigReadTests {
   @Test
   public void shouldReadComments() throws FileNotFoundException {
     YamlConfig config = helper.makeConfig("comments.yml");
-    assertLinesMatch(List.of(" Comment above a", " test 1"), config.readComment("a", true));
-    assertLinesMatch(List.of(" Comment above b", " test 2", "\n"), config.readComment("a.b", true));
-    assertLinesMatch(List.of(" Comment above value", " test 3"), config.readComment("a.b", false));
+    assertLinesMatch(Arrays.asList(" Comment above a", " test 1"), config.readComment("a", true));
+    assertLinesMatch(Arrays.asList(" Comment above b", " test 2", "\n"), config.readComment("a.b", true));
+    assertLinesMatch(Arrays.asList(" Comment above value", " test 3"), config.readComment("a.b", false));
   }
 
   @Test
@@ -105,8 +106,8 @@ public class YamlConfigReadTests {
   @Test
   public void shouldReadEmptyCommentListOnNonCommentedKey() throws FileNotFoundException {
     YamlConfig config = helper.makeConfig("comments.yml");
-    assertLinesMatch(List.of(), config.readComment("a.c", true));
-    assertLinesMatch(List.of(), config.readComment("a.c", false));
+    assertLinesMatch(Collections.emptyList(), config.readComment("a.c", true));
+    assertLinesMatch(Collections.emptyList(), config.readComment("a.c", false));
   }
 
   @Test

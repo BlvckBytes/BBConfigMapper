@@ -26,8 +26,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,17 +37,17 @@ public class YamlConfigWriteTests {
   @Test
   public void shouldAttachComments() throws Exception {
     YamlConfig config = helper.makeConfig("scalars.yml");
-    helper.assertAttachCommentInMemory("a", List.of(" Comment above a", " Second line"), true, config);
-    helper.assertAttachCommentInMemory("a.c", List.of(" Comment at the value of c", " Second line"), false, config);
-    helper.assertAttachCommentInMemory("a.i", List.of(" Comment at the key i", " Second line"), true, config);
+    helper.assertAttachCommentInMemory("a", Arrays.asList(" Comment above a", " Second line"), true, config);
+    helper.assertAttachCommentInMemory("a.c", Arrays.asList(" Comment at the value of c", " Second line"), false, config);
+    helper.assertAttachCommentInMemory("a.i", Arrays.asList(" Comment at the key i", " Second line"), true, config);
     helper.assertSave("scalars_commented.yml", config);
   }
 
   @Test
   public void shouldRefuseToAttachCommentsToNonExistingPath() throws Exception {
     YamlConfig config = helper.makeConfig("scalars.yml");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.assertAttachCommentInMemory("invalid", List.of(""), true, config), "Cannot attach a comment to a non-existing path");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.assertAttachCommentInMemory("invalid.invalid", List.of(""), false, config), "Cannot attach a comment to a non-existing path");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.assertAttachCommentInMemory("invalid", Collections.singletonList(""), true, config), "Cannot attach a comment to a non-existing path");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> helper.assertAttachCommentInMemory("invalid.invalid", Collections.singletonList(""), false, config), "Cannot attach a comment to a non-existing path");
   }
 
   @Test
@@ -105,7 +104,7 @@ public class YamlConfigWriteTests {
   public void shouldWriteEmptyFileIfRootReset() throws Exception {
     YamlConfig config = helper.makeConfig("mappings.yml");
     config.remove(null);
-    assertEquals(Map.of(), config.get(null));
+    assertEquals(Collections.emptyMap(), config.get(null));
     helper.assertSave("empty_line.yml", config);
   }
 

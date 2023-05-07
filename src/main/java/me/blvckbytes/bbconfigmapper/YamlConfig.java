@@ -311,7 +311,7 @@ public class YamlConfig implements IConfig {
     List<CommentLine> comments = new ArrayList<>();
 
     for (String line : lines) {
-      CommentType type = line.isBlank() ? CommentType.BLANK_LINE : CommentType.BLOCK;
+      CommentType type = StringUtils.isBlank(line) ? CommentType.BLANK_LINE : CommentType.BLOCK;
       comments.add(new CommentLine(null, null, line, type));
     }
 
@@ -362,7 +362,7 @@ public class YamlConfig implements IConfig {
       container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).a;
     }
 
-    if (container == null || keyPart.isBlank())
+    if (container == null || StringUtils.isBlank(keyPart))
       throw new IllegalArgumentException("Invalid path specified: " + keyPath);
 
     if (!keyPath.endsWith(keyPart))
@@ -475,7 +475,7 @@ public class YamlConfig implements IConfig {
     // Keys should never contain any whitespace
     path = path.trim();
 
-    if (path.isBlank())
+    if (StringUtils.isBlank(path))
       throw new IllegalArgumentException("Invalid path specified: " + path);
 
     Node node = rootNode;

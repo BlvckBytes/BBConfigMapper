@@ -215,7 +215,7 @@ public class ConfigMapper implements IConfigMapper {
     while (path.length() > 0) {
       String key = dotIndex < 0 ? path : path.substring(0, dotIndex);
 
-      if (key.isBlank())
+      if (StringUtils.isBlank(key))
         throw new MappingError("Cannot resolve a blank key");
 
       path = dotIndex < 0 ? "" : path.substring(dotIndex + 1);
@@ -489,10 +489,10 @@ public class ConfigMapper implements IConfigMapper {
    * @return Path A joined with path B
    */
   private String joinPaths(@Nullable String a, @Nullable String b) {
-    if (a == null || a.isBlank())
+    if (a == null || StringUtils.isBlank(a))
       return b;
 
-    if (b == null || b.isBlank())
+    if (b == null || StringUtils.isBlank(b))
       return a;
 
     if (a.endsWith(".") && b.startsWith("."))

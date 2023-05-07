@@ -116,7 +116,7 @@ public class TestHelper {
     StringWriter writer = new StringWriter();
     assertDoesNotThrow(() -> config.save(writer));
     List<String> fileContents = Files.readAllLines(Paths.get("src/test/resources/save/" + fileName));
-    List<String> writerContents = List.of(writer.toString().split("\n"));
+    List<String> writerContents = Arrays.asList(writer.toString().split("\n"));
     assertLinesMatch(fileContents, writerContents);
   }
 

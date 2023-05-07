@@ -122,7 +122,7 @@ public class ConfigValue implements IEvaluable {
 
       // Turn a scalar value into a list, if applicable
       if (!(input instanceof Collection))
-        items = List.of((Object) interpretScalar(input, genericTypes[0], env));
+        items = Collections.singletonList(interpretScalar(input, genericTypes[0], env));
       else
         items = (Collection<?>) input;
 
@@ -167,7 +167,7 @@ public class ConfigValue implements IEvaluable {
 
       // Null will just be the empty map
       if (input == null)
-        return (T) Map.of();
+        return (T) new HashMap<>();
 
       if (!(input instanceof Map))
         throw new IllegalStateException("Cannot transform type " + input.getClass().getName() + " into a map");
