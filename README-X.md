@@ -7,13 +7,7 @@
 
 An object mapper for key-based configurations making use of [GPEEE](https://github.com/BlvckBytes/GPEEE).
 
-## Table of Contents
-- [Expression Evaluation](#expression-evaluation)
-  - [Same Key Marking](#same-key-marking)
-  - [Parent Key Marking](#parent-key-marking)
-- [Value Interpretation](#value-interpretation)
-- [Comments](#comments)
-- [Key Extension](#key-extension)
+<!-- #toc -->
 
 ## Expression Evaluation
 
