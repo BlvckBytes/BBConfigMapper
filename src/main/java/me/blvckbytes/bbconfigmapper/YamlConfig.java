@@ -187,15 +187,18 @@ public class YamlConfig implements IConfig {
 
       MappingNode container = locateContainerNode(pathOfTuple, true).a;
       List<NodeTuple> containerTuples = container.getValue();
+      String key = ((ScalarNode) tuple.getKeyNode()).getValue();
 
       // The new key is at an index which doesn't yet exist, add to the end of the tuple list
       if (indexOfTuple >= containerTuples.size()) {
         containerTuples.add(tuple);
+        invalidateLocateKeyCacheFor(container, key);
         return true;
       }
 
       // Insert the new tuple at the right index
       containerTuples.add(indexOfTuple, tuple);
+      invalidateLocateKeyCacheFor(container, key);
       return true;
     });
   }

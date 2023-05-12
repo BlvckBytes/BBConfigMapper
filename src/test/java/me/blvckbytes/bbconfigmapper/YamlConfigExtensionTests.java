@@ -26,6 +26,7 @@ package me.blvckbytes.bbconfigmapper;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,6 +50,10 @@ public class YamlConfigExtensionTests {
 
     int numberOfExtendedKeys = baseConfig.extendMissingKeys(extensionConfig);
     assertEquals(5, numberOfExtendedKeys, "The base config didn't extend as many keys as expected");
+
+    assertEquals(25L, baseConfig.get("a.e.f"));
+    assertEquals("hello, world", baseConfig.get("a.e.h.j"));
+    assertEquals(Arrays.asList(15L, 18L), baseConfig.get("g.j"));
 
     helper.assertSave("mappings_patched.yml", baseConfig);
   }
