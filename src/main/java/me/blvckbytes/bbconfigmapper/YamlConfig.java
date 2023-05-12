@@ -421,8 +421,22 @@ public class YamlConfig implements IConfig {
    */
   private void invalidateLocateKeyCacheFor(MappingNode node, String key) {
     Map<String, @Nullable NodeTuple> containerCache = this.locateKeyCache.get(node);
-    if (containerCache != null)
+
+    if (containerCache != null) {
       containerCache.remove(key);
+
+      // If there's an expression marker suffix used with this configuration
+      if (expressionMarkerSuffix != null) {
+
+        // It's appended, also remove the cache entry for the non-suffixed version
+        if (key.endsWith(expressionMarkerSuffix))
+          containerCache.remove(key.substring(0, key.length() - 1));
+
+        // It's not appended, also remove the cache entry for the suffixed version
+        else
+          containerCache.remove(key + expressionMarkerSuffix);
+      }
+    }
   }
 
   /**
