@@ -1,0 +1,12 @@
+innerMerge: &innerMerge
+  f: 9
+  g: 10
+
+a: &a
+  b: 5
+  c: 3
+  <<: *innerMerge
+
+d:
+  <<: *a
+  e: 12

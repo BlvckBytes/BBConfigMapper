@@ -40,7 +40,6 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,7 +63,7 @@ public class YamlConfig implements IConfig {
   static {
     LoaderOptions loaderOptions = new LoaderOptions();
     loaderOptions.setProcessComments(true);
-    loaderOptions.setAllowDuplicateKeys(false);
+    loaderOptions.setAllowDuplicateKeys(true);
 
     DUMPER_OPTIONS = new DumperOptions();
     DUMPER_OPTIONS.setProcessComments(true);
@@ -94,10 +93,86 @@ public class YamlConfig implements IConfig {
 
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Successfully loaded the YAML root node using the provided reader");
 
-    // Swap out root node and reset key cache
+    // Swap out root node and execute standard loading routines
     this.rootNode = (MappingNode) root;
     extractHeader();
+    processMergeKeys(this.rootNode);
     this.locateKeyCache.clear();
+  }
+
+  private void processMergeKeys(MappingNode node) {
+    forAllMappingsRecursively(node, (currentContainer, currentKey, currentValue) -> {
+      if (currentKey.getTag() == Tag.MERGE) {
+        mergeNodes(currentContainer, currentValue);
+        return EMappingIterationDecision.DROP_AND_CONTINUE;
+      }
+
+      return EMappingIterationDecision.CONTINUE;
+    });
+  }
+
+  private void mergeNodes(MappingNode destination, MappingNode source) {
+    for (Iterator<NodeTuple> sourceTupleIterator = source.getValue().iterator(); sourceTupleIterator.hasNext();) {
+      NodeTuple sourceTuple = sourceTupleIterator.next();
+      Node sourceKey = sourceTuple.getKeyNode();
+      Node sourceValue = sourceTuple.getValueNode();
+
+      // Non-scalar keys are ignored in the merging process
+      if (!(sourceKey instanceof ScalarNode))
+        continue;
+
+      // The merge source itself contains another merge key and needs to be processed first
+      if (sourceKey.getTag() == Tag.MERGE) {
+        if (!(sourceValue instanceof MappingNode))
+          throw new IllegalStateException("Cannot merge a non-mapping node into another node");
+
+        mergeNodes(destination, (MappingNode) sourceValue);
+
+        // Merge succeeded, remove the no longer needed merge key
+        sourceTupleIterator.remove();
+        continue;
+      }
+
+      String sourceKeyString = ((ScalarNode) sourceKey).getValue();
+      boolean valueAbsent = true;
+
+      // Check against all keys in the destination map
+      List<NodeTuple> destinationTuples = destination.getValue();
+
+      int destinationTuplesSize = destinationTuples.size();
+      for (int i = 0; i < destinationTuplesSize; i++) {
+        NodeTuple destinationTuple = destinationTuples.get(i);
+        Node destinationKey = destinationTuple.getKeyNode();
+        Node destinationValue = destinationTuple.getValueNode();
+
+        if (!(destinationKey instanceof ScalarNode))
+          continue;
+
+        String destinationKeyString = ((ScalarNode) destinationKey).getValue();
+        if (!sourceKeyString.equals(destinationKeyString))
+          continue;
+
+        valueAbsent = false;
+
+        // Override scalar values
+        if (!(destinationValue instanceof MappingNode)) {
+          int destinationPointer = destinationValue.getStartMark().getPointer();
+          int sourcePointer = sourceValue.getStartMark().getPointer();
+
+          // Only override if the key to be overridden is above the source
+          // Keys which are added afterwards have a higher priority and thus persist
+          if (destinationPointer < sourcePointer)
+            destinationTuples.set(i, new NodeTuple(destinationKey, sourceValue));
+
+          break;
+        }
+
+        mergeNodes((MappingNode) destinationValue, (MappingNode) sourceValue);
+      }
+
+      if (valueAbsent)
+        destination.getValue().add(new NodeTuple(sourceKey, sourceValue));
+    }
   }
 
   /**
@@ -400,8 +475,12 @@ public class YamlConfig implements IConfig {
       // If the just removed tuple held a mapping node as it#s value, invalidate
       // all children mappings within that tuple recursively
       Node valueNode = existingTuple.getValueNode();
-      if (valueNode instanceof MappingNode)
-        forAllMappingsRecursively((MappingNode) valueNode, this::invalidateLocateKeyCacheFor);
+      if (valueNode instanceof MappingNode) {
+        forAllMappingsRecursively((MappingNode) valueNode, (currentContainer, currentKey, currentValue) -> {
+          this.invalidateLocateKeyCacheFor(currentValue, currentKey.getValue());
+          return EMappingIterationDecision.CONTINUE;
+        });
+      }
     }
 
     // Create a new tuple for this value, if provided
@@ -446,18 +525,34 @@ public class YamlConfig implements IConfig {
    * Call the consumer on all instances of a {@link MappingNode} within the recursive children of
    * the provided parent mapping node if that child is registered using a string key
    * @param node Parent mapping node
-   * @param consumer Consumer of a recursive child and it's string key
+   * @param consumer Mapping node consumer
    */
-  private void forAllMappingsRecursively(MappingNode node, BiConsumer<MappingNode, String> consumer) {
-    for (NodeTuple tuple : node.getValue()) {
-      Node valueNode = tuple.getValueNode();
-      Node keyNode = tuple.getKeyNode();
+  private void forAllMappingsRecursively(MappingNode node, FMappingNodeConsumer consumer) {
+    List<NodeTuple> tupleList = node.getValue();
+    int currentTupleIndex = 0;
+
+    // NOTE: It's important to iterate by indices here, as mappings are sometimes extended
+    // while iterating, and those mappings should also show up in the iteration later on
+    while (currentTupleIndex < tupleList.size()) {
+      NodeTuple currentTuple = tupleList.get(currentTupleIndex);
+
+      Node valueNode = currentTuple.getValueNode();
+      Node keyNode = currentTuple.getKeyNode();
 
       if (valueNode instanceof MappingNode && keyNode instanceof ScalarNode) {
-        String keyString = ((ScalarNode) keyNode).getValue();
-        consumer.accept(node, keyString);
         forAllMappingsRecursively((MappingNode) valueNode, consumer);
+
+        // Call after expanding, to iterate depth-first
+        EMappingIterationDecision decision = consumer.accept(node, (ScalarNode) keyNode, (MappingNode) valueNode);
+
+        // Remove the current element and set back the index, as the list now shrunk
+        if (decision == EMappingIterationDecision.DROP_AND_CONTINUE) {
+          tupleList.remove(currentTupleIndex);
+          --currentTupleIndex;
+        }
       }
+
+      ++currentTupleIndex;
     }
   }
 

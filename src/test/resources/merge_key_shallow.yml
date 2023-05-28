@@ -1,0 +1,13 @@
+a: &a
+  b: 5
+  c: 3
+  toBeOverridden: 'hello, world'
+
+f: &f
+  g: 21
+
+d:
+  <<: *a
+  <<: *f
+  e: 12
+  toBeOverridden: 'i am overridden'

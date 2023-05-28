@@ -9,6 +9,34 @@ An object mapper for key-based configurations making use of [GPEEE](https://gith
 
 <!-- #toc -->
 
+## Merging
+
+Mapping values can be merged by making use of the merge key (`<<`). This feature only makes sense in combination with
+yaml anchors, to extend one section by another one. Missing keys are extended deeply, while scalar values are - if they're
+declared above the merge key - overridden, otherwise ignored.
+
+An example of merging would be the following:
+
+```yaml
+sectionA: &sectionA
+  title: 'Welcome to section a'
+  color: green
+  width: 100
+  settings:
+    opacity: .5
+    animated: false
+
+sectionB:
+  <<: *sectionA
+  title: 'Welcome to section b'
+  settings:
+    animated: true
+```
+
+Section B "inherits" `color` as well as `width`, while it's `title` is being overridden. This inheritance works deeply, which
+is why the `settings` section of B can override just the `animated` flag, while still inheriting the `opacity`. This way, a
+template can be made use of while still being able to customize certain properties.
+
 ## Expression Evaluation
 
 If a value should be parsed into a *Program Expression* instead of being unwrapped into a primitive, either **it's** key or a
