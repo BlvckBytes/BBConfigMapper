@@ -102,18 +102,13 @@ public class YamlConfig implements IConfig {
 
   private void processMergeKeys(MappingNode node) {
     forAllMappingsRecursively(node, (currentContainer, currentKey, currentValue) -> {
-      if (currentKey.getTag() == Tag.MERGE) {
+      if (currentKey.getTag() == Tag.MERGE)
         mergeNodes(currentContainer, currentValue);
-        return EMappingIterationDecision.DROP_AND_CONTINUE;
-      }
-
-      return EMappingIterationDecision.CONTINUE;
     });
   }
 
   private void mergeNodes(MappingNode destination, MappingNode source) {
-    for (Iterator<NodeTuple> sourceTupleIterator = source.getValue().iterator(); sourceTupleIterator.hasNext();) {
-      NodeTuple sourceTuple = sourceTupleIterator.next();
+    for (NodeTuple sourceTuple : source.getValue()) {
       Node sourceKey = sourceTuple.getKeyNode();
       Node sourceValue = sourceTuple.getValueNode();
 
@@ -127,9 +122,6 @@ public class YamlConfig implements IConfig {
           throw new IllegalStateException("Cannot merge a non-mapping node into another node");
 
         mergeNodes(destination, (MappingNode) sourceValue);
-
-        // Merge succeeded, remove the no longer needed merge key
-        sourceTupleIterator.remove();
         continue;
       }
 
@@ -478,7 +470,6 @@ public class YamlConfig implements IConfig {
       if (valueNode instanceof MappingNode) {
         forAllMappingsRecursively((MappingNode) valueNode, (currentContainer, currentKey, currentValue) -> {
           this.invalidateLocateKeyCacheFor(currentValue, currentKey.getValue());
-          return EMappingIterationDecision.CONTINUE;
         });
       }
     }
@@ -543,13 +534,7 @@ public class YamlConfig implements IConfig {
         forAllMappingsRecursively((MappingNode) valueNode, consumer);
 
         // Call after expanding, to iterate depth-first
-        EMappingIterationDecision decision = consumer.accept(node, (ScalarNode) keyNode, (MappingNode) valueNode);
-
-        // Remove the current element and set back the index, as the list now shrunk
-        if (decision == EMappingIterationDecision.DROP_AND_CONTINUE) {
-          tupleList.remove(currentTupleIndex);
-          --currentTupleIndex;
-        }
+        consumer.accept(node, (ScalarNode) keyNode, (MappingNode) valueNode);
       }
 
       ++currentTupleIndex;
@@ -685,6 +670,10 @@ public class YamlConfig implements IConfig {
 
       // Key mismatch
       if (!((ScalarNode) keyNode).getValue().equalsIgnoreCase(key))
+        continue;
+
+      // Merge keys should never be retrievable and thus be "hidden"
+      if (entry.getKeyNode().getTag() == Tag.MERGE)
         continue;
 
       // Remember this call's yielded entry
