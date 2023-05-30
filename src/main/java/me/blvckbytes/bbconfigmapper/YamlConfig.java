@@ -56,6 +56,7 @@ public class YamlConfig implements IConfig {
   private final Logger logger;
   private final @Nullable String expressionMarkerSuffix;
   private final Map<MappingNode, Map<String, @Nullable NodeTuple>> locateKeyCache;
+  private final List<MergedNodeTuple> mergedTuples;
 
   private MappingNode rootNode;
   private String header;
@@ -78,6 +79,7 @@ public class YamlConfig implements IConfig {
     this.logger = logger;
     this.expressionMarkerSuffix = expressionMarkerSuffix;
     this.locateKeyCache = new HashMap<>();
+    this.mergedTuples = new ArrayList<>();
   }
 
   public void load(Reader reader) {
@@ -95,6 +97,7 @@ public class YamlConfig implements IConfig {
 
     // Swap out root node and execute standard loading routines
     this.rootNode = (MappingNode) root;
+    this.mergedTuples.clear();
     extractHeader();
     processMergeKeys(this.rootNode);
     this.locateKeyCache.clear();
@@ -162,8 +165,19 @@ public class YamlConfig implements IConfig {
         mergeNodes((MappingNode) destinationValue, (MappingNode) sourceValue);
       }
 
-      if (valueAbsent)
-        destination.getValue().add(new NodeTuple(sourceKey, sourceValue));
+      if (valueAbsent) {
+        NodeTuple tuple = new NodeTuple(sourceKey, sourceValue);
+        MergedNodeTuple mergedTuple = new MergedNodeTuple(
+          tuple,
+          () -> destinationTuples.add(tuple),
+          () -> destinationTuples.remove(tuple)
+        );
+
+        mergedTuples.add(mergedTuple);
+
+        // Initially call the add routine
+        mergedTuple.addRoutine.run();
+      }
     }
   }
 
@@ -235,7 +249,26 @@ public class YamlConfig implements IConfig {
     }
 
     writer.write(this.header);
-    YAML.serialize(this.rootNode, writer);
+    executeWhileMergedTuplesAbsent(() -> YAML.serialize(this.rootNode, writer));
+  }
+
+  private void executeWhileMergedTuplesAbsent(Runnable executable) {
+    synchronized (this.mergedTuples) {
+      for (Iterator<MergedNodeTuple> mergedTuplesIterator = this.mergedTuples.iterator(); mergedTuplesIterator.hasNext();) {
+        MergedNodeTuple mergedTuple = mergedTuplesIterator.next();
+
+        // If the remove routine yielded false, the element has no longer been in the list
+        // This means that somebody else removed it, and it thus should also not be added back later on
+        // Thus, remove it from the merged tuples list
+        if (!mergedTuple.removeRoutine.get())
+          mergedTuplesIterator.remove();
+      }
+
+      executable.run();
+
+      for (MergedNodeTuple mergedTuple : this.mergedTuples)
+        mergedTuple.addRoutine.run();
+    }
   }
 
   /**
