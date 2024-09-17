@@ -128,12 +128,12 @@ public class ConfigMapper implements IConfigMapper {
 
           Object value = resolveFieldValue(root, source, f, fieldType);
 
-          if (converter != null)
-            value = converter.apply(value, evaluator);
-
           // Couldn't resolve a non-null value, try to ask for a default value
           if (value == null)
             value = instance.defaultFor(f);
+
+          if (value != null && converter != null)
+            value = converter.apply(value, evaluator);
 
           // Only set if the value isn't null, as the default constructor
           // might have already assigned some default value earlier
