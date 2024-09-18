@@ -32,13 +32,13 @@ import java.util.Set;
 
 public interface IEvaluable {
 
-  <T> T asScalar(ScalarType type, IEvaluationEnvironment env);
+  <T> T asScalar(ScalarType<T> type, IEvaluationEnvironment env);
 
-  <T, U> Map<T, U> asMap(ScalarType key, ScalarType value, IEvaluationEnvironment env);
+  <T, U> Map<T, U> asMap(ScalarType<T> key, ScalarType<T> value, IEvaluationEnvironment env);
 
-  <T> List<T> asList(ScalarType type, IEvaluationEnvironment env);
+  <T> List<T> asList(ScalarType<T> type, IEvaluationEnvironment env);
 
-  <T> Set<T> asSet(ScalarType type, IEvaluationEnvironment env);
+  <T> Set<T> asSet(ScalarType<T> type, IEvaluationEnvironment env);
 
   Object asRawObject(IEvaluationEnvironment env);
 

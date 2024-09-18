@@ -43,19 +43,19 @@ public class ConfigValue implements IEvaluable {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T asScalar(ScalarType type, IEvaluationEnvironment env) {
+  public <T> T asScalar(ScalarType<T> type, IEvaluationEnvironment env) {
     return (T) interpret(value, type.getType(), null, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> List<T> asList(ScalarType type, IEvaluationEnvironment env) {
+  public <T> List<T> asList(ScalarType<T> type, IEvaluationEnvironment env) {
     return (List<T>) interpret(value, List.class, new ScalarType[] { type }, env);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> Set<T> asSet(ScalarType type, IEvaluationEnvironment env) {
+  public <T> Set<T> asSet(ScalarType<T> type, IEvaluationEnvironment env) {
     return (Set<T>) interpret(value, Set.class, new ScalarType[] { type }, env);
   }
 
@@ -68,7 +68,7 @@ public class ConfigValue implements IEvaluable {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T, U> Map<T, U> asMap(ScalarType key, ScalarType value, IEvaluationEnvironment env) {
+  public <T, U> Map<T, U> asMap(ScalarType<T> key, ScalarType<T> value, IEvaluationEnvironment env) {
     return (Map<T, U>) interpret(value, Map.class, new ScalarType[] { key, value }, env);
   }
 
@@ -82,7 +82,7 @@ public class ConfigValue implements IEvaluable {
    * @return Guaranteed non-Null value of the requested type
    */
   @SuppressWarnings("unchecked")
-  protected <T> T interpretScalar(@Nullable Object input, ScalarType type, IEvaluationEnvironment env) {
+  protected <T> T interpretScalar(@Nullable Object input, ScalarType<T> type, IEvaluationEnvironment env) {
     Class<?> typeClass = type.getType();
 
     if (typeClass.isInstance(input))
@@ -108,7 +108,7 @@ public class ConfigValue implements IEvaluable {
    * @return Guaranteed non-null value of the requested type
    */
   @SuppressWarnings("unchecked")
-  private<T> T interpret(@Nullable Object input, Class<T> type, @Nullable ScalarType[] genericTypes, IEvaluationEnvironment env) {
+  private<T> T interpret(@Nullable Object input, Class<T> type, @Nullable ScalarType<T>[] genericTypes, IEvaluationEnvironment env) {
 
     if (input instanceof AExpression && this.evaluator != null)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
@@ -182,12 +182,12 @@ public class ConfigValue implements IEvaluable {
       return (T) results;
     }
 
-    ScalarType scalarType = ScalarType.fromClass(type);
+    ScalarType<?> scalarType = ScalarType.fromClass(type);
 
     if (scalarType == null)
       throw new IllegalStateException("Unknown scalar type provided: " + type);
 
-    return interpretScalar(input, scalarType, env);
+    return (T) interpretScalar(input, scalarType, env);
   }
 
   @Override

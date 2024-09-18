@@ -31,18 +31,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public enum ScalarType {
-  INT(int.class, (i, e) -> (int) e.getValueInterpreter().asLong(i)),
-  LONG(long.class, (i, e) -> e.getValueInterpreter().asLong(i)),
-  DOUBLE(double.class, (i, e) -> e.getValueInterpreter().asDouble(i)),
-  BOOLEAN(boolean.class, (i, e) -> e.getValueInterpreter().asBoolean(i)),
-  STRING(String.class, (i, e) -> e.getValueInterpreter().asString(i))
-  ;
+public class ScalarType<T> {
+
+  public static final ScalarType<Integer> INT = new ScalarType<>(int.class, (i, e) -> (int) e.getValueInterpreter().asLong(i));
+  public static final ScalarType<Long> LONG = new ScalarType<>(long.class, (i, e) -> e.getValueInterpreter().asLong(i));
+  public static final ScalarType<Double> DOUBLE = new ScalarType<>(double.class, (i, e) -> e.getValueInterpreter().asDouble(i));
+  public static final ScalarType<Boolean> BOOLEAN = new ScalarType<>(boolean.class, (i, e) -> e.getValueInterpreter().asBoolean(i));
+  public static final ScalarType<String> STRING = new ScalarType<>(String.class, (i, e) -> e.getValueInterpreter().asString(i));
 
   private final Class<?> type;
   private final BiFunction<@Nullable Object, IEvaluationEnvironment, Object> interpreter;
 
-  private static final Map<Class<?>, ScalarType> lookupTable;
+  private static final Map<Class<?>, ScalarType<?>> lookupTable;
 
   static {
     lookupTable = new HashMap<>();
@@ -57,7 +57,7 @@ public enum ScalarType {
     lookupTable.put(String.class, STRING);
   }
 
-  ScalarType(Class<?> type, BiFunction<@Nullable Object, IEvaluationEnvironment, Object> interpreter) {
+  private ScalarType(Class<?> type, BiFunction<@Nullable Object, IEvaluationEnvironment, Object> interpreter) {
     this.type = type;
     this.interpreter = interpreter;
   }
@@ -70,7 +70,7 @@ public enum ScalarType {
     return interpreter;
   }
 
-  public static @Nullable ScalarType fromClass(Class<?> c) {
+  public static @Nullable ScalarType<?> fromClass(Class<?> c) {
     return lookupTable.get(c);
   }
 }
