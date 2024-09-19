@@ -24,13 +24,19 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
+
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class EntityKillQuestParameterSection implements IConfigSection {
+public class EntityKillQuestParameterSection extends AConfigSection {
 
   private String entityType;
   private String entityName;
+
+  public EntityKillQuestParameterSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

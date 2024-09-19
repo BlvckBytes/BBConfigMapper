@@ -24,12 +24,18 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-public class CustomEnumSection implements IConfigSection {
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
+
+public class CustomEnumSection extends AConfigSection {
 
   private ECustomEnum customEnumA;
   private ECustomEnum customEnumB;
   private ECustomEnum customEnumC;
   private ECustomEnum customEnumInvalid;
+
+  public CustomEnumSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   public ECustomEnum getCustomEnumA() {
     return customEnumA;

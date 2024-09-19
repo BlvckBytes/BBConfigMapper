@@ -27,11 +27,12 @@ package me.blvckbytes.bbconfigmapper.sections;
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class NoDefaultConstructorSection implements IConfigSection {
+public class NoStandardConstructorSection extends AConfigSection {
 
   private String a, b, c;
 
-  public NoDefaultConstructorSection(String a, String b, String c) {
+  public NoStandardConstructorSection(String a, String b, String c) {
+    super(null);
     this.a = a;
     this.b = b;
     this.c = c;

@@ -24,12 +24,23 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-public interface IConfigSection {
+public abstract class AConfigSection {
+
+  private final EvaluationEnvironmentBuilder baseEnvironment;
+
+  public AConfigSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    this.baseEnvironment = baseEnvironment;
+  }
+
+  public EvaluationEnvironmentBuilder getBaseEnvironment() {
+    return baseEnvironment.duplicate();
+  }
 
   /**
    * Called to decide the type of Object fields at runtime,
@@ -40,14 +51,16 @@ public interface IConfigSection {
    * @param field Target field in question
    * @return Decided type, Object.class means skip
    */
-  default @Nullable Class<?> runtimeDecide(String field) { return null; }
+  public @Nullable Class<?> runtimeDecide(String field) {
+    return null;
+  }
 
   /**
    * Called when a field wasn't found within the config and a default could be set
    * @param field Target field
    * @return Value to use as a default
    */
-  default @Nullable Object defaultFor(Field field) throws Exception {
+  public @Nullable Object defaultFor(Field field) throws Exception {
     return null;
   }
 
@@ -55,6 +68,6 @@ public interface IConfigSection {
    * Called when parsing of the section is completed
    * and no more changes will be applied
    */
-  default void afterParsing(List<Field> fields) throws Exception {}
+  public void afterParsing(List<Field> fields) throws Exception {}
 
 }

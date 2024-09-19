@@ -25,17 +25,22 @@
 package me.blvckbytes.bbconfigmapper.sections;
 
 import me.blvckbytes.bbconfigmapper.IEvaluable;
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-public class UiLayoutSectionAlways implements IConfigSection {
+public class UiLayoutSectionAlways extends AConfigSection {
 
   private String uiName;
 
   @CSAlways
   private Map<String, IEvaluable> layout;
+
+  public UiLayoutSectionAlways(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

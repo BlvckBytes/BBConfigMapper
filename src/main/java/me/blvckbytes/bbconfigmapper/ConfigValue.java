@@ -34,9 +34,9 @@ import java.util.*;
 public class ConfigValue implements IEvaluable {
 
   protected final @Nullable Object value;
-  private final @Nullable IExpressionEvaluator evaluator;
+  private final IExpressionEvaluator evaluator;
 
-  public ConfigValue(@Nullable Object value, @Nullable IExpressionEvaluator evaluator) {
+  public ConfigValue(@Nullable Object value, IExpressionEvaluator evaluator) {
     this.value = value;
     this.evaluator = evaluator;
   }
@@ -61,7 +61,7 @@ public class ConfigValue implements IEvaluable {
 
   @Override
   public Object asRawObject(IEvaluationEnvironment env) {
-    if (value instanceof AExpression && this.evaluator != null)
+    if (value instanceof AExpression)
       return this.evaluator.evaluateExpression((AExpression) value, env);
     return value;
   }
@@ -89,7 +89,7 @@ public class ConfigValue implements IEvaluable {
       return (T) input;
 
     // The input is an expression which needs to be evaluated first
-    if (input instanceof AExpression && this.evaluator != null)
+    if (input instanceof AExpression)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
 
     return (T) type.getInterpreter().apply(input, env);
@@ -110,7 +110,7 @@ public class ConfigValue implements IEvaluable {
   @SuppressWarnings("unchecked")
   private<T> T interpret(@Nullable Object input, Class<T> type, @Nullable ScalarType<T>[] genericTypes, IEvaluationEnvironment env) {
 
-    if (input instanceof AExpression && this.evaluator != null)
+    if (input instanceof AExpression)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
 
     if (type == List.class || type == Set.class) {
@@ -139,7 +139,7 @@ public class ConfigValue implements IEvaluable {
         // FIXME: This seems hella repetitive to #interpretScalar
 
         // Expression result collections are flattened into the return result collection, if applicable
-        if (item instanceof AExpression && this.evaluator != null) {
+        if (item instanceof AExpression) {
           Object result = this.evaluator.evaluateExpression((AExpression) item, env);
 
           if (result instanceof Collection) {

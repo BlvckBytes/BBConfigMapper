@@ -25,13 +25,18 @@
 package me.blvckbytes.bbconfigmapper.sections;
 
 import me.blvckbytes.bbconfigmapper.IEvaluable;
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class DatabaseSectionEvaluables implements IConfigSection {
+public class DatabaseSectionEvaluables extends AConfigSection {
 
   private IEvaluable host, port, database, username, password;
+
+  public DatabaseSectionEvaluables(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

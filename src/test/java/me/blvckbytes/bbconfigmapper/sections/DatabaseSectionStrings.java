@@ -24,14 +24,19 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class DatabaseSectionStrings implements IConfigSection {
+public class DatabaseSectionStrings extends AConfigSection {
 
   private String host, port, database, username, password;
+
+  public DatabaseSectionStrings(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

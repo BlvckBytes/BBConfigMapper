@@ -24,10 +24,12 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
+
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class IgnoreSection implements IConfigSection {
+public class IgnoreSection extends AConfigSection {
 
   @CSIgnore
   private String ignored1;
@@ -38,6 +40,10 @@ public class IgnoreSection implements IConfigSection {
   private String ignored3;
 
   private static String ignored4;
+
+  public IgnoreSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

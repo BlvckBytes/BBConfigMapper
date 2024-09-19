@@ -29,6 +29,7 @@ import me.blvckbytes.bbconfigmapper.sections.*;
 import me.blvckbytes.gpeee.GPEEE;
 import me.blvckbytes.gpeee.IExpressionEvaluator;
 import me.blvckbytes.gpeee.Tuple;
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
@@ -69,7 +70,7 @@ public class ConfigMapper implements IConfigMapper {
   }
 
   @Override
-  public <T extends IConfigSection> T mapSection(@Nullable String root, Class<T> type) throws Exception {
+  public <T extends AConfigSection> T mapSection(@Nullable String root, Class<T> type) throws Exception {
     logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the entry point of mapping path=" + root + " to type=" + type);
     return mapSectionSub(root, null, type);
   }
@@ -86,9 +87,9 @@ public class ConfigMapper implements IConfigMapper {
    * @param type Class of the config section to instantiate
    * @return Instantiated class with mapped fields
    */
-  private <T extends IConfigSection> T mapSectionSub(@Nullable String root, @Nullable Map<?, ?> source, Class<T> type) throws Exception {
+  private <T extends AConfigSection> T mapSectionSub(@Nullable String root, @Nullable Map<?, ?> source, Class<T> type) throws Exception {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "At the subroutine of mapping path=" + root + " to type=" + type + " using source=" + source);
-      T instance = findDefaultConstructor(type).newInstance();
+      T instance = findStandardConstructor(type).newInstance(evaluator.getBaseEnvironment());
 
       Tuple<List<Field>, Iterator<Field>> fields = findApplicableFields(type);
 
@@ -245,7 +246,7 @@ public class ConfigMapper implements IConfigMapper {
 
   /**
    * Tries to convert the input object to the specified type, by either stringifying,
-   * wrapping the value as an {@link IEvaluable} or by parsing a {@link IConfigSection}
+   * wrapping the value as an {@link IEvaluable} or by parsing a {@link AConfigSection}
    * if the input is of type map and returning null otherwise. Unsupported types throw.
    * @param input Input object to convert
    * @param type Type to convert to
@@ -280,7 +281,7 @@ public class ConfigMapper implements IConfigMapper {
       return input;
     }
 
-    if (IConfigSection.class.isAssignableFrom(type)) {
+    if (AConfigSection.class.isAssignableFrom(type)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Parsing value as config-section");
 
       if (!(input instanceof Map)) {
@@ -288,7 +289,7 @@ public class ConfigMapper implements IConfigMapper {
         input = new HashMap<>();
       }
 
-      Object value = mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(IConfigSection.class));
+      Object value = mapSectionSub(null, (Map<?, ?>) input, type.asSubclass(AConfigSection.class));
 
       if (converter != null)
         value = converter.apply(value, evaluator);
@@ -457,9 +458,9 @@ public class ConfigMapper implements IConfigMapper {
       return null;
     }
 
-    if (IConfigSection.class.isAssignableFrom(type)) {
+    if (AConfigSection.class.isAssignableFrom(type)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Type is of another section");
-      return mapSectionSub(path, source, type.asSubclass(IConfigSection.class));
+      return mapSectionSub(path, source, type.asSubclass(AConfigSection.class));
     }
 
     logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving path value as plain object");
@@ -505,18 +506,21 @@ public class ConfigMapper implements IConfigMapper {
   }
 
   /**
-   * Find the default constructor of a class (no parameters required to instantiate it)
+   * Find the standard constructor of a class: constructor(EvaluationEnvironmentBuilder)
    * or throw a runtime exception otherwise.
    * @param type Type of the target class
-   * @return Default constructor
+   * @return Standard constructor
    */
-  private<T> Constructor<T> findDefaultConstructor(Class<T> type) {
+  private<T> Constructor<T> findStandardConstructor(Class<T> type) {
     try {
-      Constructor<T> ctor = type.getDeclaredConstructor();
-      ctor.setAccessible(true);
-      return ctor;
+      Constructor<T> constructor = type.getDeclaredConstructor(EvaluationEnvironmentBuilder.class);
+
+      if (!Modifier.isPublic(constructor.getModifiers()))
+        throw new IllegalStateException("The standard-constructor of a config-section has to be public");
+
+      return constructor;
     } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("Please specify an empty default constructor on " + type);
+      throw new IllegalStateException("Please specify a standard-constructor taking an EvaluationEnvironmentBuilder on " + type);
     }
   }
 
@@ -541,7 +545,7 @@ public class ConfigMapper implements IConfigMapper {
   }
 
   /**
-   * Attempts to unwrap a given type to it's raw type class
+   * Attempts to unwrap a given type to its raw type class
    * @param type Type to unwrap
    * @return Unwrapped type
    */

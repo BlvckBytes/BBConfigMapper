@@ -24,15 +24,18 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
-import java.lang.reflect.Field;
-import java.util.List;
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 
-public class QuestSection implements IConfigSection {
+public class QuestSection extends AConfigSection {
 
   private String type;
 
   @CSInlined
   private Object parameter;
+
+  public QuestSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

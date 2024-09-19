@@ -24,15 +24,21 @@
 
 package me.blvckbytes.bbconfigmapper.sections;
 
+import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
+
 import java.lang.reflect.Field;
 import java.util.List;
 
-public class PotionSimpleSectionAlways implements IConfigSection {
+public class PotionSimpleSectionAlways extends AConfigSection {
 
   private String type;
 
   @CSAlways
   private PotionEffectSection mainEffect;
+
+  public PotionSimpleSectionAlways(EvaluationEnvironmentBuilder baseEnvironment) {
+    super(baseEnvironment);
+  }
 
   @Override
   public Class<?> runtimeDecide(String field) {

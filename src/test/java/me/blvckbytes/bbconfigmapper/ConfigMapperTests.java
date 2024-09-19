@@ -293,9 +293,9 @@ public class ConfigMapperTests {
   }
 
   @Test
-  public void shouldThrowWhenNoDefaultConstructorAvailable() throws Exception {
+  public void shouldThrowWhenNoStandardConstructorAvailable() throws Exception {
     IConfigMapper mapper = helper.makeMapper("mappings.yml");
-    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, NoDefaultConstructorSection.class), "Please specify an empty default constructor");
+    helper.assertThrowsWithMsg(IllegalStateException.class, () -> mapper.mapSection(null, NoStandardConstructorSection.class), "Please specify a standard-constructor taking an EvaluationEnvironmentBuilder on ");
   }
 
   @Test
