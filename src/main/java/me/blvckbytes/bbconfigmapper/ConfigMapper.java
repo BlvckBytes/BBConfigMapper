@@ -36,6 +36,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ConfigMapper implements IConfigMapper {
 
@@ -281,6 +282,22 @@ public class ConfigMapper implements IConfigMapper {
       return input;
     }
 
+    if (type.isEnum()) {
+      String upperInput = input.toString().toUpperCase(Locale.ROOT);
+      Object[] enumConstants = type.getEnumConstants();
+
+      for (Object enumConstant : enumConstants) {
+        if (((Enum<?>)enumConstant).name().equals(upperInput))
+          return enumConstant;
+      }
+
+      String existingConstants = Arrays.stream(enumConstants)
+        .map(it -> ((Enum<?>) it).name())
+        .collect(Collectors.joining(", "));
+
+      throw new MappingError("Value \"" + input + "\" was not one of " + existingConstants);
+    }
+
     if (AConfigSection.class.isAssignableFrom(type)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Parsing value as config-section");
 
@@ -301,28 +318,28 @@ public class ConfigMapper implements IConfigMapper {
 
     IEvaluable evaluable = new ConfigValue(input, this.evaluator);
 
-    if (type == IEvaluable.class) {
+    if (IEvaluable.class.isAssignableFrom(type)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Returning evaluable");
       return evaluable;
     }
 
     if (type == String.class)
-      return evaluable.<String>asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT);
+      return evaluable.asScalar(ScalarType.STRING, GPEEE.EMPTY_ENVIRONMENT);
 
     if (type == int.class || type == Integer.class)
-      return evaluable.<Long>asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT).intValue();
+      return evaluable.asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT).intValue();
 
     if (type == long.class || type == Long.class)
-      return evaluable.<Long>asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT);
+      return evaluable.asScalar(ScalarType.LONG, GPEEE.EMPTY_ENVIRONMENT);
 
     if (type == double.class || type == Double.class)
-      return evaluable.<Double>asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT);
+      return evaluable.asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT);
 
     if (type == float.class || type == Float.class)
-      return evaluable.<Double>asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT).floatValue();
+      return evaluable.asScalar(ScalarType.DOUBLE, GPEEE.EMPTY_ENVIRONMENT).floatValue();
 
     if (type == boolean.class || type == Boolean.class)
-      return evaluable.<Boolean>asScalar(ScalarType.BOOLEAN, GPEEE.EMPTY_ENVIRONMENT);
+      return evaluable.asScalar(ScalarType.BOOLEAN, GPEEE.EMPTY_ENVIRONMENT);
 
     throw new MappingError("Unsupported type specified: " + type);
   }
