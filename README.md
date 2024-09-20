@@ -15,6 +15,7 @@ An object mapper for key-based configurations making use of [GPEEE](https://gith
 - [Value Interpretation](#value-interpretation)
 - [Comments](#comments)
 - [Key Extension](#key-extension)
+  - [Commented-Out Keys](#commented-out-keys)
 
 ## Merging
 
@@ -95,3 +96,9 @@ position.
 A *YamlConfig* supports the extension of missing keys from another instance, which is a way to migrate existing configuration files
 to a newer version by adding new key-value pairs. Existing sections are extended, missing sections are added. Keys are never deleted,
 as that could possibly delete still needed configuration information for the user.
+
+### Commented-Out Keys
+
+Keys which are commented out are detected if their corresponding comment is within the right mapping-block and starts with
+any amount of whitespace, followed by the key's name, followed by a colon `:`. Since it is a feature of this mapper to comment
+out keys in order to cause null-values in Sections, in order to thereby deactivate messages/features, these keys will not be extended.

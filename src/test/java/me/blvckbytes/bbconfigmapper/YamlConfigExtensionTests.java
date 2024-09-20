@@ -57,4 +57,18 @@ public class YamlConfigExtensionTests {
 
     helper.assertSave("mappings_patched.yml", baseConfig);
   }
+
+  @Test
+  public void shouldNotExtendCommentedKeys() throws Exception {
+    char[] caseSuffixes = {'a', 'b', 'c'};
+
+    for (char caseSuffix : caseSuffixes) {
+      YamlConfig baseConfig = helper.makeConfig("commented_keys_base_" + caseSuffix + ".yml");
+      YamlConfig extensionConfig = helper.makeConfig("commented_keys_extension.yml");
+
+      baseConfig.extendMissingKeys(extensionConfig);
+
+      helper.assertSave("commented_keys_save_" + caseSuffix + ".yml", baseConfig);
+    }
+  }
 }

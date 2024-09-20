@@ -35,11 +35,13 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.comments.CommentLine;
 import org.yaml.snakeyaml.comments.CommentType;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.error.Mark;
 import org.yaml.snakeyaml.nodes.*;
 import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -271,6 +273,86 @@ public class YamlConfig implements IConfig {
     }
   }
 
+  private @Nullable NodeTuple findTupleNodeRecursively(
+    Node node,
+    Predicate<NodeTuple> matchPredicate,
+    Predicate<MappingNode> skipPredicate
+  ) {
+    NodeTuple result;
+
+    if (node instanceof MappingNode) {
+      if (skipPredicate.test((MappingNode) node))
+        return null;
+
+      for (NodeTuple entry : ((MappingNode) node).getValue()) {
+        if (matchPredicate.test(entry))
+          return entry;
+
+        if ((result = findTupleNodeRecursively(entry.getValueNode(), matchPredicate, skipPredicate)) != null)
+          return result;
+      }
+    }
+
+    else if (node instanceof SequenceNode) {
+      for (Node entry : ((SequenceNode) node).getValue()) {
+        if ((result = findTupleNodeRecursively(entry, matchPredicate, skipPredicate)) != null)
+          return result;
+      }
+    }
+
+    return null;
+  }
+
+  private boolean isKeyCommentedOut(String key, Node container) {
+    // BlockComment-s are members to their successive nodes
+    // For mappings, in the list of tuples, on the ScalarNode-s of the keys
+    // For lists, on the ScalarNode-s of items
+    // If a comment is at the end of the file, it'll be an EndComment on the root MappingNode
+
+    Predicate<CommentLine> commentedKeyMatcher = (comment) -> comment.getValue().trim().startsWith(key + ": ");
+
+    // Possibly, a key which is not the last has been commented out
+    if (container instanceof MappingNode) {
+      for (NodeTuple containerTuple : ((MappingNode) container).getValue()) {
+        if (containerTuple.getKeyNode().getBlockComments().stream().anyMatch(commentedKeyMatcher))
+          return true;
+      }
+    }
+
+    // Possibly, the last key has been commented out
+
+    Mark containerStart = container.getStartMark();
+
+    if (containerStart != null) {
+      // Find the first node that's after the container and either on same indent or less (maybe
+      // that's redundant) and skip over recursing down the current container.
+      NodeTuple nextTuple = findTupleNodeRecursively(
+        rootNode,
+        currentNode -> {
+          Mark otherStart = currentNode.getKeyNode().getStartMark();
+
+          return (
+            otherStart.getLine() > containerStart.getLine() &&
+              otherStart.getColumn() <= containerStart.getColumn()
+          );
+        },
+        currentContainer -> currentContainer == container
+      );
+
+      // Next node available - look at the next node's comments
+      if (nextTuple != null) {
+        if (nextTuple.getKeyNode().getBlockComments().stream().anyMatch(commentedKeyMatcher))
+          return true;
+      }
+    }
+
+    // No next-node available (EOF) - wrap around to root node
+
+    List<CommentLine> endComments = rootNode.getEndComments();
+
+    return endComments != null && endComments.stream().anyMatch(commentedKeyMatcher);
+  }
+
   /**
    * Extends keys which the provided config contains but are absent on this instance
    * by copying over the values those keys hold
@@ -285,9 +367,19 @@ public class YamlConfig implements IConfig {
       if (this.exists(pathOfTuple))
         return false;
 
+      String key = ((ScalarNode) tuple.getKeyNode()).getValue();
+      int lastPathDotIndex = pathOfTuple.lastIndexOf('.');
+
+      if (lastPathDotIndex > 0) {
+        String parentPath = pathOfTuple.substring(0, lastPathDotIndex);
+        Node parentNode = locateNode(parentPath, false, false).a;
+
+        if (isKeyCommentedOut(key, parentNode))
+          return false;
+      }
+
       MappingNode container = locateContainerNode(pathOfTuple, true).a;
       List<NodeTuple> containerTuples = container.getValue();
-      String key = ((ScalarNode) tuple.getKeyNode()).getValue();
 
       // The new key is at an index which doesn't yet exist, add to the end of the tuple list
       if (indexOfTuple >= containerTuples.size()) {
@@ -647,8 +739,10 @@ public class YamlConfig implements IConfig {
         // Try to reuse already present key nodes
         Node tupleKey = keyValueTuple == null ? null : keyValueTuple.getKeyNode();
 
+        List<NodeTuple> mappingTuples = mapping.getValue();
+        mappingTuples.remove(keyValueTuple);
         keyValueTuple = createNewTuple(tupleKey, pathPart, createNewMappingNode(null));
-        mapping.getValue().add(keyValueTuple);
+        mappingTuples.add(keyValueTuple);
 
         // Invalidate the (null) cache for this newly added tuple
         invalidateLocateKeyCacheFor(mapping, pathPart);
