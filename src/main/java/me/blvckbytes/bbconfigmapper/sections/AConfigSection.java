@@ -28,13 +28,27 @@ import me.blvckbytes.gpeee.interpreter.EvaluationEnvironmentBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
-import java.util.List;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public abstract class AConfigSection {
 
+  private static class DefaultSupplier {
+    private final Supplier<Object> supplier;
+    private final Set<String> fieldExceptions;
+
+    public DefaultSupplier(Supplier<Object> supplier, Set<String> fieldExceptions) {
+      this.supplier = supplier;
+      this.fieldExceptions = fieldExceptions;
+    }
+  }
+
   private final EvaluationEnvironmentBuilder baseEnvironment;
+  private final Map<Class<?>, DefaultSupplier> fieldDefaultSuppliers;
 
   public AConfigSection(EvaluationEnvironmentBuilder baseEnvironment) {
+    this.fieldDefaultSuppliers = new HashMap<>();
     this.baseEnvironment = baseEnvironment;
   }
 
@@ -60,7 +74,7 @@ public abstract class AConfigSection {
    * @param field Target field
    * @return Value to use as a default
    */
-  public @Nullable Object defaultFor(Field field) throws Exception {
+  public @Nullable Object defaultFor(Field field) {
     return null;
   }
 
@@ -68,6 +82,21 @@ public abstract class AConfigSection {
    * Called when parsing of the section is completed
    * and no more changes will be applied
    */
-  public void afterParsing(List<Field> fields) throws Exception {}
+  public void afterParsing(List<Field> fields) throws Exception {
+    for (Field field : fields) {
+      if (field.get(this) != null)
+        continue;
 
+      DefaultSupplier defaultSupplier = fieldDefaultSuppliers.get(field.getType());
+
+      if (defaultSupplier == null || defaultSupplier.fieldExceptions.contains(field.getName()))
+        continue;
+
+      field.set(this, defaultSupplier.supplier.get());
+    }
+  }
+
+  protected void registerFieldDefault(Class<?> type, Supplier<Object> supplier, String... fieldExceptions) {
+    fieldDefaultSuppliers.put(type, new DefaultSupplier(supplier, Arrays.stream(fieldExceptions).collect(Collectors.toSet())));
+  }
 }

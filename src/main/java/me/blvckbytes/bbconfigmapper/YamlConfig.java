@@ -47,6 +47,29 @@ import java.util.logging.Logger;
 
 public class YamlConfig implements IConfig {
 
+  private static class LocateNodeResult {
+    private final @Nullable Node node;
+    private final boolean markedForExpressions;
+    private final Stack<MappingNode> containerStack;
+
+    private LocateNodeResult(
+      @Nullable Node node,
+      boolean markedForExpressions,
+      Stack<MappingNode> containerStack
+    ) {
+      this.node = node;
+      this.markedForExpressions = markedForExpressions;
+      this.containerStack = containerStack;
+    }
+
+    @Nullable MappingNode getLastContainer() {
+      if (containerStack.isEmpty())
+        return null;
+
+      return containerStack.pop();
+    }
+  }
+
   /*
     TODO: Add more debug logging calls to capture all details
    */
@@ -309,7 +332,7 @@ public class YamlConfig implements IConfig {
     // For lists, on the ScalarNode-s of items
     // If a comment is at the end of the file, it'll be an EndComment on the root MappingNode
 
-    Predicate<CommentLine> commentedKeyMatcher = (comment) -> comment.getValue().trim().startsWith(key + ": ");
+    Predicate<CommentLine> commentedKeyMatcher = (comment) -> comment.getValue().trim().startsWith(key + ":");
 
     // Possibly, a key which is not the last has been commented out
     if (container instanceof MappingNode) {
@@ -368,15 +391,11 @@ public class YamlConfig implements IConfig {
         return false;
 
       String key = ((ScalarNode) tuple.getKeyNode()).getValue();
-      int lastPathDotIndex = pathOfTuple.lastIndexOf('.');
+      LocateNodeResult locateResult = locateNode(pathOfTuple, true, false);
+      Node parentNode = locateResult.getLastContainer();
 
-      if (lastPathDotIndex > 0) {
-        String parentPath = pathOfTuple.substring(0, lastPathDotIndex);
-        Node parentNode = locateNode(parentPath, false, false).a;
-
-        if (isKeyCommentedOut(key, parentNode))
-          return false;
-      }
+      if (parentNode != null && isKeyCommentedOut(key, parentNode))
+        return false;
 
       MappingNode container = locateContainerNode(pathOfTuple, true).a;
       List<NodeTuple> containerTuples = container.getValue();
@@ -433,8 +452,8 @@ public class YamlConfig implements IConfig {
   public @Nullable Object get(@Nullable String path) {
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Object at path=" + path + " has been requested");
 
-    Tuple<@Nullable Node, Boolean> target = locateNode(path, false, false);
-    Object value = target.a == null ? null : unwrapNode(target.a, target.b);
+    LocateNodeResult target = locateNode(path, false, false);
+    Object value = target.node == null ? null : unwrapNode(target.node, target.markedForExpressions);
 
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Returning content of path=" + path + " with value=" + value);
 
@@ -487,7 +506,7 @@ public class YamlConfig implements IConfig {
 
     // For a key to exist, it's path has to exist within the
     // config, even if it points at a null value
-    boolean exists = locateNode(path, true, false).a != null;
+    boolean exists = locateNode(path, true, false).node != null;
 
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Returning existence value for path=" + path + " of exists=" + exists);
 
@@ -498,7 +517,7 @@ public class YamlConfig implements IConfig {
   public void attachComment(@Nullable String path, List<String> lines, boolean self) {
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Attaching a comment to path=" + path + " (self=" + self + ") of lines=" + lines + " has been requested");
 
-    Node target = locateNode(path, self, false).a;
+    Node target = locateNode(path, self, false).node;
 
     if (target == null)
       throw new IllegalStateException("Cannot attach a comment to a non-existing path");
@@ -517,7 +536,7 @@ public class YamlConfig implements IConfig {
   public @Nullable List<String> readComment(@Nullable String path, boolean self) {
     logger.log(Level.FINEST, () -> DebugLogSource.YAML + "Reading the comment at path=" + path + " (self=" + self + ") has been requested");
 
-    Node target = locateNode(path, self, false).a;
+    Node target = locateNode(path, self, false).node;
 
     if (target == null)
       return null;
@@ -554,7 +573,7 @@ public class YamlConfig implements IConfig {
     // Look up the container by the path provided before the last dot (in force mapping creation mode)
     else {
       keyPart = keyPath.substring(lastDotIndex + 1);
-      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).a;
+      container = (MappingNode) locateNode(keyPath.substring(0, lastDotIndex), false, forceCreateMappings).node;
     }
 
     if (container == null || StringUtils.isBlank(keyPart))
@@ -690,9 +709,9 @@ public class YamlConfig implements IConfig {
    * @return A tuple of the target node or null if the target node didn't exist
    *         as well as a boolean marking whether this path was marked for expressions
    */
-  private @NotNull Tuple<@Nullable Node, Boolean> locateNode(@Nullable String path, boolean self, boolean forceCreateMappings) {
+  private @NotNull LocateNodeResult locateNode(@Nullable String path, boolean self, boolean forceCreateMappings) {
     if (path == null)
-      return new Tuple<>(rootNode, false);
+      return new LocateNodeResult(rootNode, false, null);
 
     // Keys should never contain any whitespace
     path = path.trim();
@@ -702,6 +721,7 @@ public class YamlConfig implements IConfig {
 
     Node node = rootNode;
     boolean markedForExpressions = false;
+    Stack<MappingNode> containerStack = new Stack<>();
 
     int endIndex = path.indexOf('.'), beginIndex = 0;
 
@@ -716,9 +736,12 @@ public class YamlConfig implements IConfig {
 
       // Not a mapping node, cannot look up a path-part, the key has to be invalid
       if (!(node instanceof MappingNode))
-        return new Tuple<>(null, markedForExpressions);
+        return new LocateNodeResult(null, markedForExpressions, containerStack);
 
       MappingNode mapping = (MappingNode) node;
+
+      containerStack.push(mapping);
+
       NodeTuple keyValueTuple = locateKey(mapping, pathPart);
       boolean markedAlready = expressionMarkerSuffix != null && pathPart.endsWith(expressionMarkerSuffix);
 
@@ -750,7 +773,7 @@ public class YamlConfig implements IConfig {
 
       // Current path-part does not exist
       if (keyValueTuple == null)
-        return new Tuple<>(null, markedForExpressions);
+        return new LocateNodeResult(null, markedForExpressions, containerStack);
 
       // On the last iteration and the key itself has been requested
       if (endIndex == path.length() && self)
@@ -770,7 +793,7 @@ public class YamlConfig implements IConfig {
         break;
     }
 
-    return new Tuple<>(node, markedForExpressions);
+    return new LocateNodeResult(node, markedForExpressions, containerStack);
   }
 
   /**

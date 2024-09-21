@@ -60,7 +60,7 @@ public class YamlConfigExtensionTests {
 
   @Test
   public void shouldNotExtendCommentedKeys() throws Exception {
-    char[] caseSuffixes = {'a', 'b', 'c'};
+    char[] caseSuffixes = {'a', 'b', 'c', 'd'};
 
     for (char caseSuffix : caseSuffixes) {
       YamlConfig baseConfig = helper.makeConfig("commented_keys_base_" + caseSuffix + ".yml");
