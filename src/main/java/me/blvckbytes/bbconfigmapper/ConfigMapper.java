@@ -105,7 +105,7 @@ public class ConfigMapper implements IConfigMapper {
           logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Processing field=" + fName + " of type=" + finalFieldType);
 
           // Object fields trigger a call to runtime decide their type based on previous fields
-          if (fieldType == Object.class) {
+          if (fieldType == Object.class || f.isAnnotationPresent(CSDecide.class)) {
             Class<?> decidedType = instance.runtimeDecide(fName);
 
             if (decidedType == null)
