@@ -38,6 +38,12 @@ public class ScalarType<T> {
   public static final ScalarType<Double> DOUBLE = new ScalarType<>(double.class, (i, e) -> e.getValueInterpreter().asDouble(i));
   public static final ScalarType<Boolean> BOOLEAN = new ScalarType<>(boolean.class, (i, e) -> e.getValueInterpreter().asBoolean(i));
   public static final ScalarType<String> STRING = new ScalarType<>(String.class, (i, e) -> e.getValueInterpreter().asString(i));
+  public static final ScalarType<String> STRING_PRESERVE_NULLS = new ScalarType<>(String.class, (i, e) -> {
+    if (i == null)
+      return null;
+
+    return e.getValueInterpreter().asString(i);
+  });
 
   private final Class<?> type;
   private final BiFunction<@Nullable Object, IEvaluationEnvironment, Object> interpreter;
