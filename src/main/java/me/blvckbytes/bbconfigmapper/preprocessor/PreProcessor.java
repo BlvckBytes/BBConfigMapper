@@ -1,6 +1,7 @@
 package me.blvckbytes.bbconfigmapper.preprocessor;
 
 import me.blvckbytes.bbconfigmapper.YamlConfig;
+import me.blvckbytes.gpeee.Tuple;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.nodes.*;
 
@@ -12,7 +13,10 @@ public class PreProcessor {
 
   @FunctionalInterface
   public interface ScalarNodeHandler {
-    void handle(ScalarNode node) throws Exception;
+    /**
+     * @return Whether to enable expression-mode on the parent key, if not enabled already
+     */
+    boolean handle(ScalarNode node) throws Exception;
   }
 
   private final Field scalarNodeValueField;
@@ -22,11 +26,15 @@ public class PreProcessor {
     this.scalarNodeValueField.setAccessible(true);
   }
 
-  public String preProcess(String input, PreProcessorInput substitutions) {
+  /**
+   * @return Result, and whether any substitutions took place
+   */
+  public Tuple<String, Boolean> preProcess(String input, PreProcessorInput substitutions) {
     var result = new StringBuilder();
 
     var contentBegin = -1;
     var substitutionBegin = -1;
+    var didSubstitute = false;
 
     for (var i = 0; i < input.length(); ++i) {
       var currentChar = input.charAt(i);
@@ -64,6 +72,7 @@ public class PreProcessor {
 
         result.append(renderInterpolations(substitution, temporaryVariables));
         substitutionBegin = -1;
+        didSubstitute = true;
         continue;
       }
 
@@ -77,7 +86,7 @@ public class PreProcessor {
     if (contentBegin >= 0)
       result.append(input.substring(contentBegin));
 
-    return result.toString();
+    return new Tuple<>(result.toString(), didSubstitute);
   }
 
   public Map<String, String> parseTemporaryVariables(String input, int beginIndex) {
@@ -114,13 +123,13 @@ public class PreProcessor {
   public void forEachScalarValue(
     Node valueNode, @Nullable ScalarNode keyNode,
     String expressionMarkerSuffix,
-    ScalarNodeHandler  handler
+    ScalarNodeHandler handler
   ) throws Exception {
     if (valueNode instanceof ScalarNode scalarNode) {
-      handler.handle(scalarNode);
-
-      if (keyNode != null && !keyNode.getValue().endsWith(expressionMarkerSuffix))
-        setScalarValue(keyNode, keyNode.getValue() + expressionMarkerSuffix);
+      if (handler.handle(scalarNode)) {
+        if (keyNode != null && !keyNode.getValue().endsWith(expressionMarkerSuffix))
+          setScalarValue(keyNode, keyNode.getValue() + expressionMarkerSuffix);
+      }
 
       return;
     }

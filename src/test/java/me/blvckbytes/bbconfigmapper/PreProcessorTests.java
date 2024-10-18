@@ -156,6 +156,7 @@ public class PreProcessorTests extends PreProcessorTestBase {
 
       preProcessor.forEachScalarValue(config, node -> {
         assertTrue(expectedKeys.remove(node.getValue()), "Value " + node.getValue() + " was unexpected");
+        return false;
       });
 
       assertEquals(
@@ -189,7 +190,8 @@ public class PreProcessorTests extends PreProcessorTestBase {
 
       preProcessor.forEachScalarValue(config, node -> {
         var result = preProcessor.preProcess(node.getValue(), processorInput);
-        preProcessor.setScalarValue(node, result);
+        preProcessor.setScalarValue(node, result.a);
+        return result.b;
       });
 
       assertLinesEqual(
