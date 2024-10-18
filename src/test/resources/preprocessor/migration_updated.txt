@@ -1,0 +1,24 @@
+KEY_VERY_TOP_1 Value very top 1
+KEY_VERY_TOP_2 Value very top 2
+
+# This is key a
+# - var_d: TypeD
+# - var_a: TypeA
+# - var_b: TypeB
+# - var_c: TypeC
+KEY_A Value A
+KEY_NEAR_TO_A Value near to a
+
+# This is key b
+# - var_b: TypeB
+# - var_a: TypeUpdated
+KEY_B Value B
+KEY_NEAR_TO_B_1 Value near to b 1
+KEY_NEAR_TO_B_2 Value near to b 2
+KEY_Y Value Y
+
+# This is key c
+# - var_y: TypeY
+KEY_C Value C
+
+KEY_AT_BOTTOM Value at bottom

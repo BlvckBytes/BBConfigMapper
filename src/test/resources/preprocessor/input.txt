@@ -1,0 +1,17 @@
+# This is a comment
+
+ FIRST_KEY  Value of the first key
+   SECOND_KEY \ Value of the second key
+# Comment attached to third key
+THIRD_KEY  \ Value of the third key \
+
+# Dangling comment in the middle
+
+  # Comment attached to fourth key
+FOURTH_KEY \\ Value of the fourth key \\
+   5TH_KEY    \\Value of the fifth key\\
+
+6TH_KEY    \
+       7TH_KEY    \\
+
+# Dangling comment at the end

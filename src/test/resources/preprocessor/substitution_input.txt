@@ -1,0 +1,3 @@
+KEY_A value a
+KEY_B value b
+KEY_C before {x} after

@@ -1,0 +1,9 @@
+simpleKey$: '"value a"'
+multilineValue$: |
+  hello world "value b"
+multilineList$:
+- |
+  hello world
+    test
+  "before " & x & " after"
+   another line
