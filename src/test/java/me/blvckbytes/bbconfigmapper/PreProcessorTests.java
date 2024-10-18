@@ -68,7 +68,7 @@ public class PreProcessorTests extends PreProcessorTestBase {
     );
 
     interpolationCase(
-      "a & \"Multiple\" & lut[\"PREFIX\"] & \"Variables\" & c & \":)\"",
+      "a & \"Multiple\" & (lut[\"PREFIX\"]) & \"Variables\" & c & \":)\"",
       "{a}Multiple{b}Variables{c}:)",
       Map.of(
         "b", "lut[\"PREFIX\"]"

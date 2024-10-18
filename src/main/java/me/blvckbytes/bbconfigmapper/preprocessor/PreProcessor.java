@@ -215,8 +215,10 @@ public class PreProcessor {
         var substitution = interpolationBuffer.substring(1); // Leading '{' of begin-marker
         var temporaryValue = temporaryVariables.get(substitution.toLowerCase());
 
+        // These can be arbitrarily complex expressions, which are substituted into yet another expression
+        // Add parentheses just to ensure desired order of evaluation
         if (temporaryValue != null)
-          substitution = temporaryValue;
+          substitution = "(" + temporaryValue + ")";
 
         result.append(substitution);
 
