@@ -107,6 +107,18 @@ public class YamlConfig implements IConfig {
     this.mergedTuples = new ArrayList<>();
   }
 
+  public @Nullable String getExpressionMarkerSuffix() {
+    return this.expressionMarkerSuffix;
+  }
+
+  public MappingNode getRootNode() {
+    return this.rootNode;
+  }
+
+  public String getHeader() {
+    return this.header;
+  }
+
   public void load(Reader reader) {
     Iterator<Node> nodes = YAML.composeAll(reader).iterator();
 
