@@ -119,6 +119,10 @@ public class YamlConfig implements IConfig {
     return this.header;
   }
 
+  public void clearKeyCache() {
+    this.locateKeyCache.clear();
+  }
+
   public void load(Reader reader) {
     Iterator<Node> nodes = YAML.composeAll(reader).iterator();
 
