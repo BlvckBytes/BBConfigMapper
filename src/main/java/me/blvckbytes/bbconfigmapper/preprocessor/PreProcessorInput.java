@@ -142,8 +142,7 @@ public class PreProcessorInput {
       if (!(
         (keyChar >= 'A' && keyChar <= 'Z') ||
         (keyChar >= '0' && keyChar <= '9') ||
-        keyChar == '-' ||
-        keyChar == '_'
+        keyChar == '-'
       ))
         throw new PreProcessorInputException(lineNumber, InputConflict.INVALID_KEY_CHARACTERS);
     }

@@ -1,9 +1,9 @@
-simpleKey: '@{KEY_A}'
+simpleKey: '@{KEY-A}'
 multilineValue$: |
-  hello world @{KEY_B}
+  hello world @{KEY-B}
 multilineList:
 - |
   hello world
     test
-  @{KEY_C}
+  @{KEY-C}
    another line

@@ -2,14 +2,14 @@
 # - var_a: TypeA
 # - var_b: TypeB
 # - var_c: TypeC
-KEY_A Value A
+KEY-A Value A
 
 # This is key b
 # - var_a: TypeA
 # - var_x: TypeX
-KEY_B Value B
-KEY_Y Value Y
-KEY_DISCONTINUED This one will be left untouched
+KEY-B Value B
+KEY-Y Value Y
+KEY-DISCONTINUED This one will be left untouched
 
 # This is key c
-KEY_C Value C
+KEY-C Value C

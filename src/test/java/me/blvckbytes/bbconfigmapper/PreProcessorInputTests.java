@@ -16,22 +16,22 @@ public class PreProcessorInputTests extends PreProcessorTestBase {
     var processorInput = parseInputFile("/preprocessor/input.txt");
 
     assertEquals(7, processorInput.getKeys().size());
-    assertEquals("Value of the first key", processorInput.getValue("FIRST_KEY"));
-    assertEquals(" Value of the second key", processorInput.getValue("SECOND_KEY"));
-    assertEquals(" Value of the third key ", processorInput.getValue("THIRD_KEY"));
-    assertEquals("\\ Value of the fourth key \\", processorInput.getValue("FOURTH_KEY"));
-    assertEquals("\\\\Value of the fifth key\\\\", processorInput.getValue("5TH_KEY"));
-    assertEquals("\\", processorInput.getValue("6TH_KEY"));
-    assertEquals("\\\\", processorInput.getValue("7TH_KEY"));
+    assertEquals("Value of the first key", processorInput.getValue("FIRST-KEY"));
+    assertEquals(" Value of the second key", processorInput.getValue("SECOND-KEY"));
+    assertEquals(" Value of the third key ", processorInput.getValue("THIRD-KEY"));
+    assertEquals("\\ Value of the fourth key \\", processorInput.getValue("FOURTH-KEY"));
+    assertEquals("\\\\Value of the fifth key\\\\", processorInput.getValue("5TH-KEY"));
+    assertEquals("\\", processorInput.getValue("6TH-KEY"));
+    assertEquals("\\\\", processorInput.getValue("7TH-KEY"));
   }
 
   @Test
   public void shouldThrowOnMalformedInput() {
     makeInputExceptionCase("lowercase-key test value", InputConflict.INVALID_KEY_CHARACTERS);
     makeInputExceptionCase("illègal_chärs test value", InputConflict.INVALID_KEY_CHARACTERS);
-    makeInputExceptionCase("NO_VALUE", InputConflict.BLANK_VALUE);
-    makeInputExceptionCase("EMPTY_VALUE ", InputConflict.BLANK_VALUE);
-    makeInputExceptionCase("BLANK_VALUE  ", InputConflict.BLANK_VALUE);
+    makeInputExceptionCase("NO-VALUE", InputConflict.BLANK_VALUE);
+    makeInputExceptionCase("EMPTY-VALUE ", InputConflict.BLANK_VALUE);
+    makeInputExceptionCase("BLANK-VALUE  ", InputConflict.BLANK_VALUE);
   }
 
   @Test
