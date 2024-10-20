@@ -95,6 +95,7 @@ public class YamlConfig implements IConfig {
     DUMPER_OPTIONS.setProcessComments(true);
     DUMPER_OPTIONS.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
     DUMPER_OPTIONS.setAnchorGenerator(Node::getAnchor);
+    DUMPER_OPTIONS.setSplitLines(false);
 
     YAML = new Yaml(new Constructor(loaderOptions), new Representer(DUMPER_OPTIONS), DUMPER_OPTIONS, loaderOptions);
   }
