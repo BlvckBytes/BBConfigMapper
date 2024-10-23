@@ -356,7 +356,7 @@ public class ConfigMapper implements IConfigMapper {
     List<Class<?>> genericTypes = getGenericTypes(f);
     assert genericTypes != null && genericTypes.size() == 2;
 
-    Map<Object, Object> result = new HashMap<>();
+    Map<Object, Object> result = new LinkedHashMap<>();
 
     if (!(value instanceof Map)) {
       logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Not a map, returning empty map");
