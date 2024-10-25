@@ -83,11 +83,6 @@ public class ConfigValue implements IEvaluable {
    */
   @SuppressWarnings("unchecked")
   protected <T> T interpretScalar(@Nullable Object input, ScalarType<T> type, IEvaluationEnvironment env) {
-    Class<?> typeClass = type.getType();
-
-    if (typeClass.isInstance(input))
-      return (T) input;
-
     // The input is an expression which needs to be evaluated first
     if (input instanceof AExpression)
       input = this.evaluator.evaluateExpression((AExpression) input, env);
