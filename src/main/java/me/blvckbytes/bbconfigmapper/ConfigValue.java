@@ -33,8 +33,8 @@ import java.util.*;
 
 public class ConfigValue implements IEvaluable {
 
-  protected final @Nullable Object value;
-  private final IExpressionEvaluator evaluator;
+  public final @Nullable Object value;
+  public final IExpressionEvaluator evaluator;
 
   public ConfigValue(@Nullable Object value, IExpressionEvaluator evaluator) {
     this.value = value;
