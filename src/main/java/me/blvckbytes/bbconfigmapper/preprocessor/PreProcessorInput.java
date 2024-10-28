@@ -144,13 +144,13 @@ public class PreProcessorInput {
         (keyChar >= '0' && keyChar <= '9') ||
         keyChar == '-'
       ))
-        throw new PreProcessorInputException(lineNumber, InputConflict.INVALID_KEY_CHARACTERS);
+        throw new PreProcessorInputException(lineNumber, line, InputConflict.INVALID_KEY_CHARACTERS);
     }
 
     var valueBegin = indexOfWhitespace(line, keyEnd + 1, false);
 
     if (valueBegin < 0)
-      throw new PreProcessorInputException(lineNumber, InputConflict.BLANK_VALUE);
+      throw new PreProcessorInputException(lineNumber, line, InputConflict.BLANK_VALUE);
 
     var valueEnd = line.length() - 1;
     var valueLength = valueEnd - valueBegin + 1;
