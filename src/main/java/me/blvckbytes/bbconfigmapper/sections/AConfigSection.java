@@ -91,8 +91,13 @@ public abstract class AConfigSection {
         continue;
 
       DefaultSupplier defaultSupplier = fieldDefaultSuppliers.get(field.getType());
+      CSNamed nameAnnotation = field.getAnnotation(CSNamed.class);
 
-      if (defaultSupplier == null || defaultSupplier.fieldExceptions.contains(field.getName()))
+      if (
+        defaultSupplier == null ||
+        defaultSupplier.fieldExceptions.contains(field.getName()) ||
+        (nameAnnotation != null && defaultSupplier.fieldExceptions.contains(nameAnnotation.name()))
+      )
         continue;
 
       field.set(this, defaultSupplier.supplier.get());

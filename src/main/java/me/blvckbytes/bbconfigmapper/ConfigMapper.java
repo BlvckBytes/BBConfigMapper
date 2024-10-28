@@ -96,7 +96,8 @@ public class ConfigMapper implements IConfigMapper {
 
       while (fields.b.hasNext()) {
         Field f = fields.b.next();
-        String fName = f.getName();
+        CSNamed nameAnnotation = f.getAnnotation(CSNamed.class);
+        String fName = nameAnnotation == null ? f.getName() : nameAnnotation.name();
 
         try {
           Class<?> fieldType = f.getType();
@@ -454,7 +455,7 @@ public class ConfigMapper implements IConfigMapper {
   }
 
   /**
-   * Tries to resolve a field's value based on it's type, it's annotations, it's name and
+   * Tries to resolve a field's value based on its type, it's annotations, it's name and
    * the source (either a path or a source map).
    * @param root Root node of this section (null means config root)
    * @param source Map to resolve from instead of querying the config, optional
@@ -462,7 +463,9 @@ public class ConfigMapper implements IConfigMapper {
    * @return Value to be assigned to the field
    */
   private @Nullable Object resolveFieldValue(@Nullable String root, @Nullable Map<?, ?> source, Field f, Class<?> type) throws Exception {
-    String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, f.getName());
+    CSNamed nameAnnotation = f.getAnnotation(CSNamed.class);
+    String fieldName = nameAnnotation == null ? f.getName() : nameAnnotation.name();
+    String path = f.isAnnotationPresent(CSInlined.class) ? root : joinPaths(root, fieldName);
     boolean always = f.isAnnotationPresent(CSAlways.class) || f.getDeclaringClass().isAnnotationPresent(CSAlways.class);
 
     logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving value for field=" + f.getName() + " at path=" + path + " using source=" + source);
