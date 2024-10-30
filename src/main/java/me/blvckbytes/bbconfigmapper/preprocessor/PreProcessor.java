@@ -55,7 +55,7 @@ public class PreProcessor {
         var temporaryVariables = Map.<String, String>of();
 
         if (openingParenthesisIndex >= 0) {
-          var closingParenthesisIndex = substitutionContent.indexOf(')');
+          var closingParenthesisIndex = substitutionContent.lastIndexOf(')');
 
           if (closingParenthesisIndex > openingParenthesisIndex) {
             var temporaryVariablesContent = substitutionContent.substring(openingParenthesisIndex + 1, closingParenthesisIndex);

@@ -5,5 +5,5 @@ multilineList$:
 - |
   hello world
     test
-  "before " & x & " after"
+  "before " & x & " after " & (key(a)) & " and " & (value(a))
    another line

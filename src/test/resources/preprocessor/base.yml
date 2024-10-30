@@ -5,5 +5,5 @@ multilineList:
 - |
   hello world
     test
-  @{KEY-C}
+  @{KEY-C(y=key(a); z=value(a))}
    another line

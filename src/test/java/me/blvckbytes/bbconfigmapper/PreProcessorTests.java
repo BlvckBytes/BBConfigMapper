@@ -100,14 +100,16 @@ public class PreProcessorTests extends PreProcessorTestBase {
   public void shouldParseTemporaryVariables() throws Exception {
     var preProcessor = new PreProcessor();
     var temporaryVariables = preProcessor.parseTemporaryVariables(
-      "a=lut[\"PREFIX\"];B = test ; c  =if x then y else z",
+      "a=lut[\"PREFIX\"];B = test ; c  =if x then y else z; d=key(y); e=value(y)",
       0
     );
 
-    assertEquals(3, temporaryVariables.size());
+    assertEquals(5, temporaryVariables.size());
     assertEquals("lut[\"PREFIX\"]", temporaryVariables.get("a"));
     assertEquals("test", temporaryVariables.get("b"));
     assertEquals("if x then y else z", temporaryVariables.get("c"));
+    assertEquals("key(y)", temporaryVariables.get("d"));
+    assertEquals("value(y)", temporaryVariables.get("e"));
   }
 
   @Test
