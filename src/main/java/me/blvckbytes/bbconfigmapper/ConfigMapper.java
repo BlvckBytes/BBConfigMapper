@@ -393,7 +393,7 @@ public class ConfigMapper implements IConfigMapper {
    * @param value Previously looked up value
    * @return Value to assign to the field
    */
-  private Object handleResolveListField(Field f, Object value) throws Exception {
+  private List<Object> handleResolveListField(Field f, Object value) throws Exception {
     logger.log(Level.FINEST, () -> DebugLogSource.MAPPER + "Resolving list field");
 
     List<Class<?>> genericTypes = getGenericTypes(f);
@@ -494,8 +494,14 @@ public class ConfigMapper implements IConfigMapper {
     if (Map.class.isAssignableFrom(type))
       return handleResolveMapField(f, value);
 
-    if (List.class.isAssignableFrom(type))
-      return handleResolveListField(f, value);
+    if (List.class.isAssignableFrom(type) || Set.class.isAssignableFrom(type)) {
+      var result = handleResolveListField(f, value);
+
+      if (Set.class.isAssignableFrom(type))
+        return new HashSet<>(result);
+
+      return result;
+    }
 
     if (type.isArray())
       return handleResolveArrayField(f, value);
